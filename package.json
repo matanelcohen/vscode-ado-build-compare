@@ -4,7 +4,7 @@
   "description": "Azure DevOps build comparison and analysis tools",
   "version": "0.1.0",
   "publisher": "matanelcohen",
-  "icon": "media/logo.svg",
+  "icon": "media/logo.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/matanelcohen_microsoft/adoBuildCompare.git"
