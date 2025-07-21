@@ -1,0 +1,61 @@
+# Build artifacts
+.vscode/**
+.vscode-test/**
+src/**
+tsconfig.json
+!out/**
+
+# Node modules (except production dependencies)
+node_modules/**
+!node_modules/@fluentui/**
+!node_modules/react/**
+!node_modules/react-dom/**
+!node_modules/react-router-dom/**
+!node_modules/react-markdown/**
+!node_modules/react-syntax-highlighter/**
+!node_modules/axios/**
+
+# Development files
+.gitignore
+.eslintrc.json
+README.md
+CHANGELOG.md
+*.md
+*.map
+*.log
+
+# Test files
+**/*.test.*
+**/*.spec.*
+**/test/**
+
+# Unused files
+media/reset.css
+media/sidebar.css
+src/sidebarView.js
+src/components/ComparisonActions.tsx
+src/components/CommitComparisonResults.tsx
+src/components/LatestDeploymentInfo.tsx
+src/components/BuildSelector.tsx
+src/BuildSelector.tsx
+
+# Development configurations
+.prettierrc
+.editorconfig
+jest.config.js
+webpack.config.js
+rollup.config.js
+
+# Package files
+package-lock.json
+yarn.lock
+
+# IDE files
+.idea/**
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,25 @@
+/* Contains VS Code theme variables */
+body {
+    background-color: var(--vscode-sideBar-background);
+    color: var(--vscode-sideBarTitle-foreground);
+    font-family: var(--vscode-font-family);
+    font-weight: var(--vscode-font-weight);
+    font-size: var(--vscode-font-size);
+    padding: 5px;
+}
+
+a {
+    color: var(--vscode-textLink-foreground);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--vscode-textLink-activeForeground);
+    text-decoration: underline;
+}
+
+.codicon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+}

@@ -1,0 +1,29 @@
+/* Custom styles for the sidebar cards */
+.card {
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    background-color: var(--vscode-list-inactiveSelectionBackground);
+    color: var(--vscode-list-inactiveSelectionForeground);
+    border: 1px solid transparent; /* For hover/active state */
+}
+
+.card:hover {
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
+    border-color: var(--vscode-list-hoverOutline, var(--vscode-focusBorder)); /* Use hoverOutline if available, fallback to focusBorder */
+}
+
+.card.active {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+    border-color: var(--vscode-list-focusOutline, var(--vscode-focusBorder)); /* Use focusOutline if available, fallback to focusBorder */
+}
+
+.card .codicon {
+    font-size: 1.2em; /* Make icon slightly larger */
+    margin-right: 8px;
+}
