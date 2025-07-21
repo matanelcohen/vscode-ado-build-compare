@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive installation guide (INSTALL.md)
 - Automated GitHub release workflow
 - Release script for version management
+- Extension icon configuration (media/logo.svg)
 
 ### Changed
 - Improved PR link generation to use configuration instead of hardcoded values
 - Updated CI workflow to use Node.js 20
 - Enhanced error handling and debugging capabilities
+- Made `relevantPathFilter` configuration optional
 
 ### Removed
 - Code Review functionality (focusing on Build Comparison only)
@@ -24,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Lint errors and TypeScript warnings
 - VSCE packaging issues in CI
+- Program crash when `relevantPathFilter` is not configured
 
 ## [0.1.0] - 2024-XX-XX
 

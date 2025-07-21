@@ -16,7 +16,7 @@ export interface AdcPipelineViewerConfig {
   pipelineDefinitionId: number;
   targetStageName: string;
   repositoryId: string;
-  relevantPathFilter: string;
+  relevantPathFilter?: string; // Optional
 }
 
 function getAzureDevOpsApiBaseUrl(orgUrl: string): string {
@@ -135,7 +135,8 @@ export async function fetchLastNBuilds(
   config: AdcPipelineViewerConfig // Add config parameter
 ): Promise<PipelineRun[]> {
   // Use config parameter directly
-  const { organizationUrl, projectName, pipelineDefinitionId, repositoryId } = config;
+  const { organizationUrl, projectName, pipelineDefinitionId, repositoryId } =
+    config;
   const apiBaseUrl = getAzureDevOpsApiBaseUrl(organizationUrl);
 
   const runsUrl = `${organizationUrl}/${projectName}/_apis/build/builds?definitions=${pipelineDefinitionId}&$top=${count}&queryOrder=finishTimeDescending&properties=sourceVersion&api-version=7.1-preview.7`;
@@ -153,9 +154,9 @@ export async function fetchLastNBuilds(
         if (run.sourceVersion && repositoryId) {
           try {
             const commitUrl = `${apiBaseUrl}/${projectName}/_apis/git/repositories/${repositoryId}/commits/${run.sourceVersion}?api-version=7.1`;
-            const commitResponse = await fetch(commitUrl, { headers } as any).then(
-              (r) => r.json()
-            );
+            const commitResponse = await fetch(commitUrl, {
+              headers,
+            } as any).then((r) => r.json());
             commitMessage = commitResponse.comment || undefined;
           } catch (commitError) {
             console.error(
@@ -256,9 +257,11 @@ export async function fetchCommitRangeData(
 
           // Split the filter string into an array of patterns
           const pathPatterns = relevantPathFilter
-            .split(",")
-            .map((pattern) => pattern.trim())
-            .filter((pattern) => pattern.length > 0);
+            ? relevantPathFilter
+                .split(",")
+                .map((pattern) => pattern.trim())
+                .filter((pattern) => pattern.length > 0)
+            : [];
 
           // Check if any affected path includes any of the specified patterns
           if (

@@ -77,8 +77,7 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
     !projectName ||
     pipelineDefinitionId === undefined || // Check for undefined as 0 could be valid
     !targetStageName ||
-    !repositoryId ||
-    !relevantPathFilter
+    !repositoryId
   ) {
     vscode.window.showErrorMessage(
       "FE Ninja Tools configuration is missing or incomplete in VS Code settings." // Updated error message

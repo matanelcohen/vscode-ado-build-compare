@@ -163,7 +163,8 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
           {!isComparisonActive ? (
             <>
               <Text className={styles.pathFilter}>
-                Showing changes within: {config.relevantPathFilter}
+                Showing changes within:{" "}
+                {config.relevantPathFilter || "all paths"}
               </Text>
               <BuildSelector
                 builds={builds}
