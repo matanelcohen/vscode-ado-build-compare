@@ -28,13 +28,13 @@ Before installing the extension, ensure you have:
 2. **Access Extensions View**
    - Press `Ctrl+Shift+X` (Windows/Linux) or `Cmd+Shift+X` (Mac)
    - Or click the Extensions icon in the Activity Bar
-   
+
    ![Extensions View](./docs/images/extensions-view.png)
 
 3. **Search for Extension**
    - Type "Build Compare Tools" in the search box
    - Look for the extension by "matanelcohen"
-   
+
    ![Search Extension](./docs/images/search-extension.png)
 
 4. **Install Extension**
@@ -156,10 +156,10 @@ Your Azure DevOps organization URL format:
 ### Pipeline Definition ID
 1. **Go to Pipelines**
    - Navigate to Pipelines in your Azure DevOps project
-   
+
 2. **Select Your Pipeline**
    - Click on the pipeline you want to monitor
-   
+
 3. **Get Pipeline ID**
    - Look at the URL: `https://dev.azure.com/yourorg/yourproject/_build?definitionId=123`
    - The number after `definitionId=` is your pipeline definition ID
@@ -169,7 +169,7 @@ Your Azure DevOps organization URL format:
 ### Target Stage Name
 1. **Open Pipeline Definition**
    - Go to your pipeline in Azure DevOps
-   
+
 2. **Check Stages**
    - Look at the pipeline YAML or visual designer
    - Find the exact stage name you want to monitor
@@ -180,7 +180,7 @@ Your Azure DevOps organization URL format:
 ### Repository ID
 1. **Go to Repositories**
    - Navigate to Repos in your Azure DevOps project
-   
+
 2. **Get Repository ID**
    - Method 1: Look at the URL when viewing the repository
    - Method 2: Use the repository name (often works as ID)
@@ -282,7 +282,7 @@ Check the VS Code Output panel → "Build Compare Tools" for detailed logs.
 
 1. **Via Activity Bar**
    - Click the 🔄 icon in the Activity Bar (left side)
-   
+
 2. **Via Command Palette**
    - Press `Ctrl+Shift+P` / `Cmd+Shift+P`
    - Type "Compare Builds"
@@ -292,10 +292,10 @@ Check the VS Code Output panel → "Build Compare Tools" for detailed logs.
 
 1. **Select Source Build**
    - Choose the older build from the dropdown
-   
+
 2. **Select Target Build**
    - Choose the newer build to compare against
-   
+
 3. **View Results**
    - See commit differences
    - Review changed files
@@ -339,7 +339,7 @@ For multi-root workspaces, configure settings per folder:
       "path": "./frontend"
     },
     {
-      "name": "Backend", 
+      "name": "Backend",
       "path": "./backend"
     }
   ],

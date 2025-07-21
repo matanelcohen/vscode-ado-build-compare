@@ -1,6 +1,6 @@
 # Image Placeholders for Installation Guide
 
-This directory contains images referenced in the INSTALL.md guide. 
+This directory contains images referenced in the INSTALL.md guide.
 
 ## Required Images
 
