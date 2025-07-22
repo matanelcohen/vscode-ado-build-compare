@@ -3,8 +3,8 @@
   "displayName": "Build Compare Tools",
   "description": "Azure DevOps build comparison and analysis tools",
   "version": "0.1.0",
-  "publisher": "matanelcohen",
-  "icon": "media/logo.png",
+  "publisher": "matanelcohen@microsoft.com",
+  "icon": "media/logo2.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/matanelcohen_microsoft/adoBuildCompare.git"
@@ -37,10 +37,6 @@
         "command": "fe-ninja-tools.openSettings",
         "title": "Open Build Compare Tools Settings",
         "icon": "$(settings-gear)"
-      },
-      {
-        "command": "fe-ninja-tools.openActivityView",
-        "title": "Open Build Compare Tools"
       }
     ],
     "viewsContainers": {
@@ -48,7 +44,7 @@
         {
           "id": "build-compare-tools",
           "title": "Build Compare Tools",
-          "icon": "$(compare-changes)"
+          "icon": "media/logo2.png"
         }
       ]
     },
@@ -56,26 +52,13 @@
       "build-compare-tools": [
         {
           "id": "build-compare-view",
-          "name": "Compare Builds",
+          "name": "Build Compare Tools",
           "type": "webview",
           "when": "true"
         }
       ]
     },
     "menus": {
-      "view/title": [
-        {
-          "command": "fe-ninja-tools.showPipelines",
-          "when": "view == build-compare-tools",
-          "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "fe-ninja-tools.showPipelines",
-          "when": "view == build-compare-tools"
-        }
-      ],
       "commandPalette": [
         {
           "command": "fe-ninja-tools.showPipelines",

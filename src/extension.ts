@@ -4,7 +4,7 @@ import { AdcPipelineViewerConfig } from "./api";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
-// Simple WebviewViewProvider for the activity bar
+// Simple WebviewViewProvider that immediately opens the React app
 class BuildCompareViewProvider implements vscode.WebviewViewProvider {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -13,7 +13,7 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
     };
 
-    // Simple HTML that immediately triggers the compare builds command
+    // Simple HTML that immediately opens the React app
     webviewView.webview.html = `
       <!DOCTYPE html>
       <html>
@@ -28,41 +28,33 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
             font-family: var(--vscode-font-family);
             color: var(--vscode-foreground);
           }
-          .launch-button {
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-          }
-          .launch-button:hover {
-            background: var(--vscode-button-hoverBackground);
+          .message {
+            text-align: center;
           }
         </style>
       </head>
       <body>
-        <button class="launch-button" onclick="launchCompare()">🔄 Compare Builds</button>
+        <div class="message">
+          <p>Opening Build Compare Tools...</p>
+        </div>
         <script>
-          const vscode = acquireVsCodeApi();
-          function launchCompare() {
-            vscode.postMessage({ command: 'launch' });
-          }
-          // Auto-launch when view is opened
-          setTimeout(() => launchCompare(), 100);
+          // Immediately open the React app
+          setTimeout(() => {
+            window.parent.postMessage({ command: 'openReactApp' }, '*');
+          }, 100);
         </script>
       </body>
       </html>
     `;
 
-    webviewView.webview.onDidReceiveMessage((message) => {
-      if (message.command === 'launch') {
-        vscode.commands.executeCommand('fe-ninja-tools.showPipelines');
-      }
-    });
+    // Open the React app immediately when view is resolved
+    setTimeout(() => {
+      vscode.commands.executeCommand("fe-ninja-tools.showPipelines");
+    }, 100);
   }
-}// Helper function to get configuration
+}
+
+// Helper function to get configuration
 function getExtensionConfig(): AdcPipelineViewerConfig | null {
   const config = vscode.workspace.getConfiguration("feNinjaTools"); // Updated configuration section name
   const organizationUrl = config.get<string>("organizationUrl");
@@ -128,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
     'Congratulations, your extension "fe-ninja-tools" is now active!'
   );
 
-  // Register the webview view provider for the activity bar
+  // Register the simple webview view provider for the activity bar
   const viewProvider = new BuildCompareViewProvider(context);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -147,13 +139,6 @@ export function activate(context: vscode.ExtensionContext) {
         "workbench.action.openSettings",
         "feNinjaTools"
       );
-    })
-  );
-
-  // Register command for activity bar click
-  context.subscriptions.push(
-    vscode.commands.registerCommand("fe-ninja-tools.openActivityView", () => {
-      vscode.commands.executeCommand("fe-ninja-tools.showPipelines");
     })
   );
 
