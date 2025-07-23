@@ -3,7 +3,7 @@
   "displayName": "Build Compare Tools",
   "description": "Azure DevOps build comparison and analysis tools",
   "version": "0.1.0",
-  "publisher": "matanelcohen@microsoft.com",
+  "publisher": "matanelcohen",
   "icon": "media/logo2.png",
   "repository": {
     "type": "git",
