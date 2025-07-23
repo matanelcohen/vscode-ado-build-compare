@@ -76,32 +76,32 @@
     "configuration": {
       "title": "Build Compare Tools",
       "properties": {
-        "feNinjaTools.organizationUrl": {
+        "buildCompareTools.organizationUrl": {
           "type": "string",
           "default": "",
           "description": "Azure DevOps organization URL (e.g., https://dev.azure.com/yourorg)."
         },
-        "feNinjaTools.projectName": {
+        "buildCompareTools.projectName": {
           "type": "string",
           "default": "",
           "description": "Azure DevOps project name."
         },
-        "feNinjaTools.pipelineDefinitionId": {
+        "buildCompareTools.pipelineDefinitionId": {
           "type": "number",
           "default": 0,
           "description": "The definition ID of the Azure Pipeline to monitor."
         },
-        "feNinjaTools.targetStageName": {
+        "buildCompareTools.targetStageName": {
           "type": "string",
           "default": "",
           "description": "The name of the target deployment stage in the pipeline."
         },
-        "feNinjaTools.repositoryId": {
+        "buildCompareTools.repositoryId": {
           "type": "string",
           "default": "",
           "description": "The ID or name of the repository associated with the pipeline."
         },
-        "feNinjaTools.relevantPathFilter": {
+        "buildCompareTools.relevantPathFilter": {
           "type": "string",
           "default": "",
           "description": "Optional path filter to consider commits relevant (e.g., /src/frontend). Leave empty to include all."

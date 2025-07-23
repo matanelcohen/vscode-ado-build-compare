@@ -99,12 +99,12 @@ Add the following configuration to your VS Code settings:
 
 ```json
 {
-  "feNinjaTools.organizationUrl": "https://dev.azure.com/yourorganization",
-  "feNinjaTools.projectName": "YourProjectName",
-  "feNinjaTools.pipelineDefinitionId": 123,
-  "feNinjaTools.targetStageName": "Deploy to Production",
-  "feNinjaTools.repositoryId": "your-repository-id",
-  "feNinjaTools.relevantPathFilter": "src/,tests/"
+  "buildCompareTools.organizationUrl": "https://dev.azure.com/yourorganization",
+  "buildCompareTools.projectName": "YourProjectName",
+  "buildCompareTools.pipelineDefinitionId": 123,
+  "buildCompareTools.targetStageName": "Deploy to Production",
+  "buildCompareTools.repositoryId": "your-repository-id",
+  "buildCompareTools.relevantPathFilter": "src/,tests/"
 }
 ```
 
@@ -136,7 +136,7 @@ Add the following configuration to your VS Code settings:
    - Or set it in VS Code settings:
    ```json
    {
-     "feNinjaTools.accessToken": "your-personal-access-token"
+     "buildCompareTools.accessToken": "your-personal-access-token"
    }
    ```
 
@@ -193,36 +193,36 @@ Your Azure DevOps organization URL format:
 ### Example 1: Standard Azure DevOps Services Setup
 ```json
 {
-  "feNinjaTools.organizationUrl": "https://dev.azure.com/contoso",
-  "feNinjaTools.projectName": "WebApplication",
-  "feNinjaTools.pipelineDefinitionId": 42,
-  "feNinjaTools.targetStageName": "Deploy to Production",
-  "feNinjaTools.repositoryId": "WebApp-Frontend",
-  "feNinjaTools.relevantPathFilter": "src/frontend/,src/shared/"
+  "buildCompareTools.organizationUrl": "https://dev.azure.com/contoso",
+  "buildCompareTools.projectName": "WebApplication",
+  "buildCompareTools.pipelineDefinitionId": 42,
+  "buildCompareTools.targetStageName": "Deploy to Production",
+  "buildCompareTools.repositoryId": "WebApp-Frontend",
+  "buildCompareTools.relevantPathFilter": "src/frontend/,src/shared/"
 }
 ```
 
 ### Example 2: Azure DevOps Server (On-Premises)
 ```json
 {
-  "feNinjaTools.organizationUrl": "https://tfs.company.com/tfs/DefaultCollection",
-  "feNinjaTools.projectName": "Enterprise Project",
-  "feNinjaTools.pipelineDefinitionId": 156,
-  "feNinjaTools.targetStageName": "Production Deployment",
-  "feNinjaTools.repositoryId": "enterprise-app",
-  "feNinjaTools.relevantPathFilter": ""
+  "buildCompareTools.organizationUrl": "https://tfs.company.com/tfs/DefaultCollection",
+  "buildCompareTools.projectName": "Enterprise Project",
+  "buildCompareTools.pipelineDefinitionId": 156,
+  "buildCompareTools.targetStageName": "Production Deployment",
+  "buildCompareTools.repositoryId": "enterprise-app",
+  "buildCompareTools.relevantPathFilter": ""
 }
 ```
 
 ### Example 3: Multiple Environment Setup
 ```json
 {
-  "feNinjaTools.organizationUrl": "https://dev.azure.com/mycompany",
-  "feNinjaTools.projectName": "MobileApp",
-  "feNinjaTools.pipelineDefinitionId": 89,
-  "feNinjaTools.targetStageName": "Deploy to Staging",
-  "feNinjaTools.repositoryId": "mobile-app-repo",
-  "feNinjaTools.relevantPathFilter": "mobile/src/,shared/"
+  "buildCompareTools.organizationUrl": "https://dev.azure.com/mycompany",
+  "buildCompareTools.projectName": "MobileApp",
+  "buildCompareTools.pipelineDefinitionId": 89,
+  "buildCompareTools.targetStageName": "Deploy to Staging",
+  "buildCompareTools.repositoryId": "mobile-app-repo",
+  "buildCompareTools.relevantPathFilter": "mobile/src/,shared/"
 }
 ```
 
@@ -270,7 +270,7 @@ Your Azure DevOps organization URL format:
 Enable debug logging by adding:
 ```json
 {
-  "feNinjaTools.debug": true
+  "buildCompareTools.debug": true
 }
 ```
 
@@ -318,12 +318,12 @@ Create `.vscode/settings.json` in your project root:
 
 ```json
 {
-  "feNinjaTools.organizationUrl": "https://dev.azure.com/myorg",
-  "feNinjaTools.projectName": "CurrentProject",
-  "feNinjaTools.pipelineDefinitionId": 456,
-  "feNinjaTools.targetStageName": "Deploy",
-  "feNinjaTools.repositoryId": "current-repo",
-  "feNinjaTools.relevantPathFilter": "."
+  "buildCompareTools.organizationUrl": "https://dev.azure.com/myorg",
+  "buildCompareTools.projectName": "CurrentProject",
+  "buildCompareTools.pipelineDefinitionId": 456,
+  "buildCompareTools.targetStageName": "Deploy",
+  "buildCompareTools.repositoryId": "current-repo",
+  "buildCompareTools.relevantPathFilter": "."
 }
 ```
 
@@ -344,8 +344,8 @@ For multi-root workspaces, configure settings per folder:
     }
   ],
   "settings": {
-    "feNinjaTools.organizationUrl": "https://dev.azure.com/myorg",
-    "feNinjaTools.projectName": "FullStackApp"
+    "buildCompareTools.organizationUrl": "https://dev.azure.com/myorg",
+    "buildCompareTools.projectName": "FullStackApp"
   }
 }
 ```

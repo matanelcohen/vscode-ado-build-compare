@@ -28,12 +28,12 @@ Add these settings to your VS Code settings:
 
 ```json
 {
-  "feNinjaTools.organizationUrl": "https://dev.azure.com/yourorg",
-  "feNinjaTools.projectName": "YourProject",
-  "feNinjaTools.pipelineDefinitionId": 123,
-  "feNinjaTools.targetStageName": "YourStage",
-  "feNinjaTools.repositoryId": "your-repo-id",
-  "feNinjaTools.relevantPathFilter": "src/"
+  "buildCompareTools.organizationUrl": "https://dev.azure.com/yourorg",
+  "buildCompareTools.projectName": "YourProject",
+  "buildCompareTools.pipelineDefinitionId": 123,
+  "buildCompareTools.targetStageName": "YourStage",
+  "buildCompareTools.repositoryId": "your-repo-id",
+  "buildCompareTools.relevantPathFilter": "src/"
 }
 ```
 

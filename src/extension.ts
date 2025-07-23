@@ -56,7 +56,7 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
 
 // Helper function to get configuration
 function getExtensionConfig(): AdcPipelineViewerConfig | null {
-  const config = vscode.workspace.getConfiguration("feNinjaTools"); // Updated configuration section name
+  const config = vscode.workspace.getConfiguration("buildCompareTools"); // Updated configuration section name
   const organizationUrl = config.get<string>("organizationUrl");
   const projectName = config.get<string>("projectName");
   const pipelineDefinitionId = config.get<number>("pipelineDefinitionId");
@@ -72,7 +72,7 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
     !repositoryId
   ) {
     vscode.window.showErrorMessage(
-      "FE Ninja Tools configuration is missing or incomplete in VS Code settings." // Updated error message
+      "Build Compare Tools configuration is missing or incomplete in VS Code settings." // Updated error message
     );
     return null;
   }
@@ -117,7 +117,7 @@ async function loadCompareBuildsByDefault() {
 
 export function activate(context: vscode.ExtensionContext) {
   console.log(
-    'Congratulations, your extension "fe-ninja-tools" is now active!'
+    'Congratulations, your extension "Build Compare Tools" is now active!'
   );
 
   // Register the simple webview view provider for the activity bar
@@ -137,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("fe-ninja-tools.openSettings", () => {
       vscode.commands.executeCommand(
         "workbench.action.openSettings",
-        "feNinjaTools"
+        "buildCompareTools"
       );
     })
   );
@@ -156,7 +156,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       currentPanel = vscode.window.createWebviewPanel(
         "gaiaToolsReport",
-        "FE Ninja Tools - Compare Builds", // Updated title
+        "Build Compare Tools - Compare Builds", // Updated title
         column || vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -392,7 +392,7 @@ function getWebviewContent(
   const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
   const nonce = getNonce();
   // Make CSP less restrictive for debugging
-  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https:; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} https: data:; connect-src *;">\n            <title>FE Ninja Tools UI Report</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
+  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https:; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} https: data:; connect-src *;">\n            <title>Build Compare Tools UI Report</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
 }
 
 function getNonce() {
