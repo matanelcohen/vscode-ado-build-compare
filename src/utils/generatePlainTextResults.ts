@@ -6,7 +6,7 @@ const parseCommitString = (commitString: string) => {
   if (match) {
     return {
       prNumber: match[1],
-      message: match[2].trim(),
+      message: (match[2] ?? "").trim(),
       link: match[3],
     };
   }

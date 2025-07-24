@@ -115,7 +115,7 @@ export const BuildSelector: React.FC<BuildSelectorProps> = ({
   disabled,
 }) => {
   const styles = useStyles();
-  const compareButtonRef = useRef<HTMLButtonElement>(null); // Create a ref for the button
+  const compareButtonRef = useRef<any>(null); // Create a ref for the button
 
   const handleSelect = (buildId: number) => {
     if (disabled) return;
