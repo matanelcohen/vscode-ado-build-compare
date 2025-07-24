@@ -58,14 +58,12 @@ function makeRequest<T>(command: string, data: any): Promise<T> {
       ...data
     };
 
-    console.log('Sending message from api-sdk:', message);
     vscode.postMessage(message);
 
     // Timeout after 30 seconds
     setTimeout(() => {
       if (pendingRequests.has(requestId)) {
         pendingRequests.delete(requestId);
-        console.log(`Request timeout for ${command} with requestId: ${requestId}`);
         reject(new Error(`Request timeout for ${command}`));
       }
     }, 30000);

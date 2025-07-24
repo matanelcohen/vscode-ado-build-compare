@@ -4,7 +4,7 @@ import {
   findLatestDeployedRun,
   fetchLastNBuilds,
   AdcPipelineViewerConfig,
-} from "../api";
+} from "../api-sdk";
 
 export function useBuildData(
   accessToken: string | null,

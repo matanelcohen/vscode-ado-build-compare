@@ -1,6 +1,6 @@
 import * as React from "react";
 import { PipelineRun } from "../interfaces/pipeline";
-import { fetchCommitRangeData, AdcPipelineViewerConfig } from "../api";
+import { fetchCommitRangeData, AdcPipelineViewerConfig } from "../api-sdk";
 
 export function useCommitComparison(): {
   committerMap: { [committer: string]: string[] } | null;

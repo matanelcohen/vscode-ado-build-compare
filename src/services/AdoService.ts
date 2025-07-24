@@ -72,6 +72,7 @@ export class AdoService {
   async findLatestDeployedRun(): Promise<PipelineRun | null> {
     try {
       const buildApiClient = await this.buildApi;
+
       const builds = await buildApiClient.getBuilds(
         this.config.projectName,
         [this.config.pipelineDefinitionId], // definitions
@@ -92,8 +93,8 @@ export class AdoService {
         return null;
       }
 
-      // Check each build to see if the target stage succeeded
-      for (const build of builds) {
+      // Check all builds in parallel for better performance
+      const timelinePromises = builds.map(async (build) => {
         try {
           const timeline = await buildApiClient.getBuildTimeline(
             this.config.projectName,
@@ -105,21 +106,27 @@ export class AdoService {
               (record: any) => record.type === "Stage" && record.name === this.config.targetStageName
             );
 
-            if (
-              targetStageRecord &&
-              targetStageRecord.state === "completed" &&
-              targetStageRecord.result === "succeeded"
-            ) {
-              return this.buildToPipelineRun(build);
+            if (targetStageRecord) {
+              // Azure DevOps uses enum values: state 2 = completed, result 0 = succeeded
+              if (
+                targetStageRecord.state === 2 &&
+                targetStageRecord.result === 0
+              ) {
+                return build;
+              }
             }
           }
+          return null;
         } catch (timelineError) {
-          // Continue to next build if timeline fetch fails
-          continue;
+          return null;
         }
-      }
+      });
 
-      return null;
+      // Wait for all timeline checks to complete
+      const results = await Promise.all(timelinePromises);
+      const successfulBuild = results.find(result => result !== null);
+
+      return successfulBuild ? this.buildToPipelineRun(successfulBuild) : null;
     } catch (error) {
       console.error("Error finding latest deployed run:", error);
       return null;
@@ -203,12 +210,19 @@ export class AdoService {
 
       const gitApiClient = await this.gitApi;
 
-      // Get the parent commit of the older run
-      const parentCommit = await gitApiClient.getCommit(
-        olderRun.sourceVersion,
-        this.config.repositoryId,
-        this.config.projectName
-      );
+      // Parallelize the initial commit fetches for better performance
+      const [parentCommit, newerCommitDetails] = await Promise.all([
+        gitApiClient.getCommit(
+          olderRun.sourceVersion,
+          this.config.repositoryId,
+          this.config.projectName
+        ),
+        gitApiClient.getCommit(
+          selectedBuild.sourceVersion,
+          this.config.repositoryId,
+          this.config.projectName
+        )
+      ]);
 
       if (!parentCommit.parents || parentCommit.parents.length === 0) {
         return {
@@ -225,14 +239,9 @@ export class AdoService {
         };
       }
 
+      // Get the parent commit details
       const parentCommitDetails = await gitApiClient.getCommit(
         parentCommitId,
-        this.config.repositoryId,
-        this.config.projectName
-      );
-
-      const newerCommitDetails = await gitApiClient.getCommit(
-        selectedBuild.sourceVersion,
         this.config.repositoryId,
         this.config.projectName
       );
@@ -262,8 +271,8 @@ export class AdoService {
       const committerMap: { [committer: string]: string[] } = {};
       const prIdRegex = /Merged PR (\d+)/i;
 
-      // Process commits in chunks to avoid overwhelming the API
-      const chunkSize = 10;
+      // Process commits in chunks to avoid overwhelming the API (increased for better performance)
+      const chunkSize = 20;
       for (let i = 0; i < commits.length; i += chunkSize) {
         const chunk = commits.slice(i, i + chunkSize);
 
