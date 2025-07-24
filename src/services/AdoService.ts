@@ -3,8 +3,8 @@ import { IBuildApi } from "azure-devops-node-api/BuildApi";
 import { IGitApi } from "azure-devops-node-api/GitApi";
 import { Build, BuildStatus } from "azure-devops-node-api/interfaces/BuildInterfaces";
 import { GitPullRequest, GitPullRequestSearchCriteria } from "azure-devops-node-api/interfaces/GitInterfaces";
-import { AdcPipelineViewerConfig } from "../api";
-import { PipelineRun } from "../interfaces/pipeline";
+import { AdcPipelineViewerConfig } from "../api-sdk";
+import { PipelineRun } from "../api-sdk";
 
 export class AdoService {
   private connection: azdev.WebApi;

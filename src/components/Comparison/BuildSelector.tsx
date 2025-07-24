@@ -10,7 +10,7 @@ import {
   Title3,
   Tooltip,
 } from "@fluentui/react-components";
-import { PipelineRun } from "../../interfaces/pipeline";
+import { PipelineRun } from "../../api-sdk";
 
 const useStyles = makeStyles({
   card: {

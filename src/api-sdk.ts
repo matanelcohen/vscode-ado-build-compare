@@ -1,5 +1,43 @@
-import { PipelineRun } from "./interfaces/pipeline";
-import { GitPullRequest } from "./interfaces/ado";
+import { GitPullRequest } from "azure-devops-node-api/interfaces/GitInterfaces";
+
+// Keep PipelineRun as it's a simplified interface for the webview
+export interface PipelineRun {
+  id: number;
+  buildNumber: string;
+  sourceVersion?: string | undefined;
+  finishTime?: string | undefined;
+  commitMessage?: string | undefined;
+  status?: string | undefined;
+  result?: string | undefined;
+  startTime?: string | undefined;
+  queueTime?: string | undefined;
+  url?: string | undefined;
+  _links?: any;
+  definition?: {
+    id: number;
+    name: string;
+    url: string;
+  } | undefined;
+  project?: {
+    id: string;
+    name: string;
+  } | undefined;
+  requestedBy?: {
+    displayName: string;
+    id: string;
+    uniqueName: string;
+  } | undefined;
+  reason?: string | undefined;
+  sourceBranch?: string | undefined;
+  sourceRepositoryId?: string | undefined;
+  templateParameters?: any;
+  triggerInfo?: any;
+  uri?: string | undefined;
+  buildNumberRevision?: number | undefined;
+  deleted?: boolean | undefined;
+  retainedByRelease?: boolean | undefined;
+  triggeredByBuild?: Record<string, unknown> | undefined;
+}
 
 export interface AdcPipelineViewerConfig {
   organizationUrl: string;

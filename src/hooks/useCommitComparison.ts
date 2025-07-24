@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PipelineRun } from "../interfaces/pipeline";
+import { PipelineRun } from "../api-sdk";
 import { fetchCommitRangeData, AdcPipelineViewerConfig } from "../api-sdk";
 
 export function useCommitComparison(): {

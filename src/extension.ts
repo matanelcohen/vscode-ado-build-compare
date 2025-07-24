@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
-import { AdcPipelineViewerConfig } from "./api";
+import { AdcPipelineViewerConfig } from "./api-sdk";
 import { AdoService } from "./services/AdoService";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
