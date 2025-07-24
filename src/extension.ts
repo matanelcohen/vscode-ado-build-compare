@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import { AdcPipelineViewerConfig } from "./api";
+import { AdoService } from "./services/AdoService";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
@@ -78,7 +79,7 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
     pipelineDefinitionId,
     targetStageName,
     repositoryId,
-    relevantPathFilter: relevantPathFilter || undefined,
+    relevantPathFilter: relevantPathFilter ?? "",
   };
 }
 
@@ -273,6 +274,104 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage(
                   `Could not open file: ${filePath}`
                 );
+              }
+              return;
+            }
+            case "findLatestDeployedRun": {
+              try {
+                const { accessToken, config } = message;
+                const adoService = new AdoService(
+                  config.organizationUrl,
+                  accessToken,
+                  config
+                );
+                const result = await adoService.findLatestDeployedRun();
+                currentPanel?.webview.postMessage({
+                  command: "findLatestDeployedRunResponse",
+                  requestId: message.requestId,
+                  result: result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "findLatestDeployedRunResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Unknown error",
+                });
+              }
+              return;
+            }
+            case "fetchLastNBuilds": {
+              try {
+                const { accessToken, count, config } = message;
+                const adoService = new AdoService(
+                  config.organizationUrl,
+                  accessToken,
+                  config
+                );
+                const result = await adoService.fetchLastNBuilds(count);
+                currentPanel?.webview.postMessage({
+                  command: "fetchLastNBuildsResponse",
+                  requestId: message.requestId,
+                  result: result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "fetchLastNBuildsResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Unknown error",
+                });
+              }
+              return;
+            }
+            case "fetchCommitRangeData": {
+              try {
+                const { accessToken, olderRun, selectedBuild, config } =
+                  message;
+                const adoService = new AdoService(
+                  config.organizationUrl,
+                  accessToken,
+                  config
+                );
+                const result = await adoService.fetchCommitRangeData(
+                  olderRun,
+                  selectedBuild
+                );
+                currentPanel?.webview.postMessage({
+                  command: "fetchCommitRangeDataResponse",
+                  requestId: message.requestId,
+                  result: result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "fetchCommitRangeDataResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Unknown error",
+                });
+              }
+              return;
+            }
+            case "getActivePullRequestForBranch": {
+              try {
+                const { accessToken, branchName, config } = message;
+                const adoService = new AdoService(
+                  config.organizationUrl,
+                  accessToken,
+                  config
+                );
+                const result = await adoService.getActivePullRequestForBranch(
+                  branchName
+                );
+                currentPanel?.webview.postMessage({
+                  command: "getActivePullRequestForBranchResponse",
+                  requestId: message.requestId,
+                  result: result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "getActivePullRequestForBranchResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Unknown error",
+                });
               }
               return;
             }

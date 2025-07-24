@@ -1,63 +1,126 @@
-# Build Compare Tools - VS Code Extension
+# VS Code ADO Build Compare Extension
 
-A VS Code extension for comparing Azure DevOps builds and analyzing changes between pipeline runs.
+A Visual Studio Code extension for comparing Azure DevOps builds and analyzing changes between deployments.
 
 ## Features
 
-🔄 **Build Comparison**: Compare builds between different pipeline runs and analyze changes
-🎯 **Activity Bar Integration**: Quick access via activity bar icon
-⚡ **Optimized Performance**: Lightweight extension with tree-shaking and minimization
+- 🔄 **Build Comparison**: Compare builds and see what changed between the last successful deployment and a selected build
+- 📊 **Commit Analysis**: View commits grouped by committer with pull request links
+- 🚀 **Pipeline Integration**: Direct integration with Azure DevOps pipelines
+- 🎨 **VS Code Theme Support**: Matches your VS Code theme (light/dark/high contrast)
+- ⚡ **Real-time Data**: Fetches live data from Azure DevOps APIs
 
 ## Installation
 
-### From VS Code Marketplace
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X)
-3. Search for "Build Compare Tools"
-4. Click Install
+### From Source
 
-### From VSIX File
-1. Download the latest `.vsix` file from [Releases](../../releases)
-2. Open VS Code
-3. Run command: `Extensions: Install from VSIX...`
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/matanelcohen/vscode-ado-build-compare.git
+   cd vscode-ado-build-compare
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Compile the extension:
+   ```bash
+   npm run compile
+   ```
+
+4. Open in VS Code and press `F5` to run the extension in a new Extension Development Host window.
+
+### From VSIX Package
+
+1. Download the latest `.vsix` file from the [Releases](https://github.com/matanelcohen/vscode-ado-build-compare/releases) page
+2. In VS Code, go to Extensions view (`Ctrl+Shift+X`)
+3. Click the `...` menu and select "Install from VSIX..."
 4. Select the downloaded `.vsix` file
 
 ## Configuration
 
-Add these settings to your VS Code settings:
+Before using the extension, configure it in VS Code settings:
 
-```json
-{
-  "buildCompareTools.organizationUrl": "https://dev.azure.com/yourorg",
-  "buildCompareTools.projectName": "YourProject",
-  "buildCompareTools.pipelineDefinitionId": 123,
-  "buildCompareTools.targetStageName": "YourStage",
-  "buildCompareTools.repositoryId": "your-repo-id",
-  "buildCompareTools.relevantPathFilter": "src/"
-}
-```
+1. Open VS Code Settings (`Ctrl+,`)
+2. Search for "Build Compare Tools"
+3. Configure the following settings:
+
+### Required Settings
+
+- **Organization URL**: Your Azure DevOps organization URL (e.g., `https://dev.azure.com/yourorg`)
+- **Project Name**: Your Azure DevOps project name
+- **Pipeline Definition ID**: The ID of the pipeline you want to monitor
+- **Target Stage Name**: The name of the deployment stage to track (e.g., "Deploy to Production")
+- **Repository ID**: The ID or name of the Git repository
+
+### Optional Settings
+
+- **Relevant Path Filter**: Filter commits by path (e.g., `/src/frontend`) to show only relevant changes
 
 ## Usage
 
-### Build Comparison
-1. Click the 🔄 icon in the activity bar
-2. Select builds to compare
-3. View detailed comparison results
+1. **Open the Extension**:
+   - Use the Command Palette (`Ctrl+Shift+P`) and run "Compare Builds"
+   - Or click the Build Compare Tools icon in the Activity Bar
+
+2. **View Latest Deployment**: The extension automatically shows the latest successful deployment
+
+3. **Compare Builds**:
+   - Select a build from the list to compare against the latest deployment
+   - Click "Compare" to see the changes
+
+4. **Analyze Results**:
+   - View commits grouped by committer
+   - Click on pull request links to view details in Azure DevOps
+   - Copy results to clipboard for sharing
 
 ## Development
 
 ### Prerequisites
+
 - Node.js 18+
-- npm
+- npm or yarn
+- VS Code
 
 ### Setup
+
 ```bash
-git clone <repository>
-cd ado-pipeline-viewer
+# Clone the repository
+git clone https://github.com/matanelcohen/vscode-ado-build-compare.git
+cd vscode-ado-build-compare
+
+# Install dependencies
 npm install
+
+# Compile the extension
+npm run compile
+
+# Watch for changes (optional)
+npm run compile-watch
 ```
 
-### Build
+### Project Structure
+
+```
+├── src/
+│   ├── components/          # React components
+│   ├── hooks/              # React hooks
+│   ├── interfaces/         # TypeScript interfaces
+│   ├── pages/              # Main page components
+│   ├── services/           # API services
+│   ├── utils/              # Utility functions
+│   ├── extension.ts        # VS Code extension entry point
+│   ├── index.tsx           # React app entry point
+│   └── api.ts              # Azure DevOps API calls
+├── media/                  # Icons and images
+├── docs/                   # Documentation
+└── out/                    # Compiled output
+```
+
+### Building
+
 ```bash
 # Development build
 npm run compile
@@ -65,91 +128,63 @@ npm run compile
 # Production build
 npm run compile-production
 
-# Package extension
+# Package as VSIX
 npm run package
 ```
 
-### Scripts
-- `npm run compile` - Build extension and webview
-- `npm run compile-production` - Optimized production build
-- `npm run package` - Create VSIX package
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix linting issues
+### Testing
 
-## Architecture
-
-- **Extension Backend** (`src/extension.ts`) - VS Code API integration
-- **React Frontend** (`src/index.tsx`) - Webview UI
-- **Webpack Build** - Optimized bundling with tree shaking
-- **TypeScript** - Type-safe development
-
-### Running in Development
-1. Open the project in VS Code
-2. Press `F5` to launch Extension Development Host
-3. Test your changes in the new VS Code window
-
-## Releases
-
-### Creating a Release
-
-#### Option 1: Using the Release Script (Recommended)
 ```bash
-./scripts/release.sh 1.2.3
+# Lint code
+npm run lint
+
+# Fix linting issues
+npm run lint:fix
 ```
-
-#### Option 2: Manual Git Tag
-```bash
-git tag v1.2.3
-git push origin v1.2.3
-```
-
-#### Option 3: Manual GitHub Workflow
-1. Go to Actions tab in GitHub
-2. Select "Release" workflow
-3. Click "Run workflow"
-4. Enter version number (e.g., v1.2.3)
-
-### Release Process
-1. **Automatic Build** - GitHub Actions builds the extension
-2. **Create Release** - Automatically creates GitHub release with changelog
-3. **Upload VSIX** - Extension package uploaded to release assets
-4. **Marketplace Publishing** - Optional publishing to VS Code Marketplace
-
-### Release Assets
-Each release includes:
-- 📦 **VSIX file** - Ready-to-install extension package
-- 📋 **Installation instructions** - How to install the extension
-- 🔗 **Configuration guide** - Links to setup documentation
 
 ## Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### How to Contribute
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Update [CHANGELOG.md](./CHANGELOG.md)
-5. Run tests and linting (`npm run lint`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Submit a pull request
+4. Add tests if applicable
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-## CI/CD
+## Authentication
 
-GitHub Actions workflows:
-- **CI** (`ci.yml`) - Build and test on every push/PR
-- **Release** (`release.yml`) - Create releases and publish packages
+The extension uses VS Code's built-in Microsoft authentication to access Azure DevOps APIs. You'll be prompted to sign in with your Microsoft account when first using the extension.
 
-### Workflow Triggers
-- **CI**: Push to `main`/`develop`, Pull Requests
-- **Release**: Git tags (`v*`), Manual trigger
+## Troubleshooting
+
+### Common Issues
+
+1. **"Configuration missing" error**: Ensure all required settings are configured in VS Code settings
+2. **Authentication failed**: Try signing out and back in through VS Code's account menu
+3. **No builds found**: Check that the pipeline definition ID is correct and the pipeline has completed runs
+4. **Empty results**: Verify that the target stage name matches exactly with your pipeline stage
+
+### Getting Help
+
+- 📝 [Create an issue](https://github.com/matanelcohen/vscode-ado-build-compare/issues) for bug reports
+- 💡 [Request a feature](https://github.com/matanelcohen/vscode-ado-build-compare/issues) for new functionality
+- 📚 Check the [documentation](https://github.com/matanelcohen/vscode-ado-build-compare/wiki) for detailed guides
 
 ## License
 
-[Add your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## Acknowledgments
 
-For issues and support:
-1. Check the [Installation Guide](./INSTALL.md)
-2. Review [Troubleshooting](./INSTALL.md#troubleshooting)
-3. Search [existing issues](../../issues)
-4. Create a [new issue](../../issues/new) if needed
+- Built with ❤️ using [VS Code Extension API](https://code.visualstudio.com/api)
+- UI components from [Fluent UI React](https://react.fluentui.dev/)
+- Azure DevOps integration via [REST APIs](https://docs.microsoft.com/en-us/rest/api/azure/devops/)
+
+---
+
+**Happy building! 🚀**
