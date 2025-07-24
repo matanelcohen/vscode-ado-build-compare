@@ -1,10 +1,9 @@
 import * as vscode from "vscode";
-import { exec } from "child_process"; // Import exec for running git command
+import { exec } from "child_process";
 import { AdcPipelineViewerConfig } from "./api";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
-// Simple WebviewViewProvider that immediately opens the React app
 class BuildCompareViewProvider implements vscode.WebviewViewProvider {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -13,7 +12,6 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
     };
 
-    // Simple HTML that immediately opens the React app
     webviewView.webview.html = `
       <!DOCTYPE html>
       <html>
@@ -38,7 +36,6 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
           <p>Opening Build Compare Tools...</p>
         </div>
         <script>
-          // Immediately open the React app
           setTimeout(() => {
             window.parent.postMessage({ command: 'openReactApp' }, '*');
           }, 100);
@@ -47,16 +44,14 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
       </html>
     `;
 
-    // Open the React app immediately when view is resolved
     setTimeout(() => {
       vscode.commands.executeCommand("fe-ninja-tools.showPipelines");
     }, 100);
   }
 }
 
-// Helper function to get configuration
 function getExtensionConfig(): AdcPipelineViewerConfig | null {
-  const config = vscode.workspace.getConfiguration("buildCompareTools"); // Updated configuration section name
+  const config = vscode.workspace.getConfiguration("buildCompareTools");
   const organizationUrl = config.get<string>("organizationUrl");
   const projectName = config.get<string>("projectName");
   const pipelineDefinitionId = config.get<number>("pipelineDefinitionId");
@@ -67,12 +62,12 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
   if (
     !organizationUrl ||
     !projectName ||
-    pipelineDefinitionId === undefined || // Check for undefined as 0 could be valid
+    pipelineDefinitionId === undefined ||
     !targetStageName ||
     !repositoryId
   ) {
     vscode.window.showErrorMessage(
-      "Build Compare Tools configuration is missing or incomplete in VS Code settings." // Updated error message
+      "Build Compare Tools configuration is missing or incomplete in VS Code settings."
     );
     return null;
   }
@@ -83,17 +78,9 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
     pipelineDefinitionId,
     targetStageName,
     repositoryId,
-    relevantPathFilter,
+    relevantPathFilter: relevantPathFilter || undefined,
   };
 }
-
-// --- CardViewProvider (REMOVED - No longer using sidebar) ---
-// Commented out completely to reduce bundle size
-/*
-class CardViewProvider implements vscode.WebviewViewProvider {
-  // ... entire class implementation removed
-}
-*/
 
 async function loadCompareBuildsByDefault() {
   try {
@@ -107,20 +94,14 @@ async function loadCompareBuildsByDefault() {
     );
 
     if (session?.accessToken) {
-      // No need to navigate since Compare Builds is now the default route
-      console.log("Authentication ready for Compare Builds");
+      return;
     }
   } catch (error) {
-    console.error("Failed to auto-load compare builds:", error);
+    return;
   }
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log(
-    'Congratulations, your extension "Build Compare Tools" is now active!'
-  );
-
-  // Register the simple webview view provider for the activity bar
   const viewProvider = new BuildCompareViewProvider(context);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -129,10 +110,8 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  // Auto-load Compare Builds by default
   loadCompareBuildsByDefault();
 
-  // Register command to open extension settings
   context.subscriptions.push(
     vscode.commands.registerCommand("fe-ninja-tools.openSettings", () => {
       vscode.commands.executeCommand(
@@ -142,7 +121,6 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Command to show the main webview panel
   context.subscriptions.push(
     vscode.commands.registerCommand("fe-ninja-tools.showPipelines", () => {
       const column = vscode.window.activeTextEditor
@@ -156,7 +134,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       currentPanel = vscode.window.createWebviewPanel(
         "gaiaToolsReport",
-        "Build Compare Tools - Compare Builds", // Updated title
+        "Build Compare Tools - Compare Builds",
         column || vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -174,29 +152,22 @@ export function activate(context: vscode.ExtensionContext) {
 
       const panelDisposables: vscode.Disposable[] = [];
 
-      // Add listener for theme changes
       const themeChangeListener = vscode.window.onDidChangeActiveColorTheme(
         (theme) => {
-          console.log("VS Code theme changed, notifying webview:", theme.kind);
           currentPanel?.webview.postMessage({
             command: "themeChanged",
-            theme: `vscode-${vscode.ColorThemeKind[theme.kind].toLowerCase()}`, // e.g., vscode-dark
+            theme: `vscode-${vscode.ColorThemeKind[theme.kind].toLowerCase()}`,
           });
         }
       );
       panelDisposables.push(themeChangeListener);
-
-      // No need to navigate to /compare anymore since it's now the default route
-
       currentPanel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {
             case "getTokenAndConfig": {
-              // Changed command name
               try {
                 const config = getExtensionConfig();
                 if (!config) {
-                  // Error message already shown by getExtensionConfig
                   currentPanel?.webview.postMessage({
                     command: "tokenAndConfigResponse",
                     token: null,
@@ -213,9 +184,9 @@ export function activate(context: vscode.ExtensionContext) {
                 );
 
                 currentPanel?.webview.postMessage({
-                  command: "tokenAndConfigResponse", // Changed response command name
+                  command: "tokenAndConfigResponse",
                   token: session?.accessToken,
-                  config: config, // Send config along with token
+                  config: config,
                 });
               } catch (error) {
                 vscode.window.showErrorMessage(
@@ -231,8 +202,6 @@ export function activate(context: vscode.ExtensionContext) {
               return;
             }
             case "getCurrentBranch": {
-              // Execute git command to get current branch
-              // Ensure the command runs in the workspace root
               const workspaceFolder =
                 vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
               if (!workspaceFolder) {
@@ -248,7 +217,6 @@ export function activate(context: vscode.ExtensionContext) {
                 { cwd: workspaceFolder },
                 (error, stdout, stderr) => {
                   if (error) {
-                    console.error(`Error getting git branch: ${error.message}`);
                     currentPanel?.webview.postMessage({
                       command: "currentBranchResponse",
                       branch: null,
@@ -259,32 +227,25 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                   }
                   const branchName = stdout.trim();
-                  // ADO API often expects full ref name (refs/heads/...)
                   const fullRefName = `refs/heads/${branchName}`;
                   currentPanel?.webview.postMessage({
                     command: "currentBranchResponse",
-                    branch: fullRefName, // Send the full ref name
+                    branch: fullRefName,
                   });
                 }
               );
               return;
             }
             case "getTheme": {
-              // Handle request for initial theme
               const currentTheme = vscode.window.activeColorTheme;
-              console.log(
-                "Webview requested theme, sending:",
-                currentTheme.kind
-              );
               currentPanel?.webview.postMessage({
-                command: "themeChanged", // Reuse themeChanged command
+                command: "themeChanged",
                 theme: `vscode-${vscode.ColorThemeKind[
                   currentTheme.kind
                 ].toLowerCase()}`,
               });
               return;
             }
-            // Add cases for other messages if needed
             case "openFileAtLine": {
               const { filePath, line } = message;
               const workspaceFolderUri =
@@ -324,7 +285,6 @@ export function activate(context: vscode.ExtensionContext) {
       currentPanel.onDidDispose(
         () => {
           currentPanel = undefined;
-          // Dispose theme listener when panel closes
           themeChangeListener.dispose();
           while (panelDisposables.length) {
             const d = panelDisposables.pop();
@@ -339,25 +299,18 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Command to handle navigation requests (from sidebar webview or elsewhere)
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "tools.navigate",
       (route: string = "/compare") => {
-        // Default to compare if no route provided
         const targetRoute = route || "/compare";
 
-        // 1. Ensure the main panel exists or create it
         if (!currentPanel) {
           vscode.commands
             .executeCommand("fe-ninja-tools.showPipelines")
             .then(() => {
-              // Use a slight delay to ensure the panel is ready
               setTimeout(() => {
                 if (currentPanel) {
-                  console.log(
-                    `Extension sending navigate message after opening: ${targetRoute}`
-                  );
                   currentPanel.webview.postMessage({
                     type: "navigate",
                     payload: targetRoute,
@@ -366,8 +319,6 @@ export function activate(context: vscode.ExtensionContext) {
               }, 500);
             });
         } else {
-          // 2. If panel exists, just send the message and reveal
-          console.log(`Extension sending navigate message: ${targetRoute}`);
           currentPanel.webview.postMessage({
             type: "navigate",
             payload: targetRoute,
@@ -379,7 +330,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-// getWebviewContent for the *main panel*
 function getWebviewContent(
   webview: vscode.Webview,
   extensionUri: vscode.Uri
@@ -391,7 +341,6 @@ function getWebviewContent(
   );
   const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
   const nonce = getNonce();
-  // Make CSP less restrictive for debugging
   return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https:; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} https: data:; connect-src *;">\n            <title>Build Compare Tools UI Report</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
 }
 
@@ -406,5 +355,5 @@ function getNonce() {
 }
 
 export function deactivate() {
-  // Cleanup logic would go here if needed
+  return;
 }

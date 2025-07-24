@@ -5,20 +5,18 @@ interface VsCodeApi {
 }
 
 export function useVSCodeTheme(vscode: VsCodeApi): string {
-  const [theme, setTheme] = useState<string>('vscode-dark'); // Default theme
+  const [theme, setTheme] = useState<string>('vscode-dark');
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
       if (message.command === 'themeChanged') {
-        console.log("Theme changed:", message.theme);
         setTheme(message.theme);
       }
     };
 
     window.addEventListener('message', handleMessage);
 
-    // Request initial theme
     vscode.postMessage({ command: 'getTheme' });
 
     return () => {

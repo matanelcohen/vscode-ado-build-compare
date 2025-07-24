@@ -1,4 +1,3 @@
-// src/hooks/useBuildData.ts
 import * as React from "react";
 import { PipelineRun } from "../interfaces/pipeline";
 import {
@@ -34,9 +33,7 @@ export function useBuildData(
 
     (async () => {
       try {
-        console.log("Searching for latest deployed run with config:", config);
         const latest = await findLatestDeployedRun(accessToken, config);
-        console.log("Found latest run:", latest);
 
         if (!latest) {
           setError(
@@ -57,12 +54,9 @@ export function useBuildData(
 
         const buildList = await fetchLastNBuilds(accessToken, 30, config);
 
-        // Filter builds: must be different from latest, have a finishTime, and be newer
         const newerBuilds = buildList.filter((b) => {
           return (
             b.id !== latest.id
-            // b.finishTime && // Ensure the build has a finish time
-            // new Date(b.finishTime) > latestFinishDate // Compare dates
           );
         });
 

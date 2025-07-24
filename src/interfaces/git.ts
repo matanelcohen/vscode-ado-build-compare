@@ -1,28 +1,87 @@
-export interface GitCommitRefFull {
+export interface GitCommitRef {
   commitId: string;
+  url: string;
+}
+
+export interface GitUserDate {
+  name: string;
+  email: string;
+  date: string;
+}
+
+export interface GitCommitRefFull extends GitCommitRef {
+  author: GitUserDate;
+  committer: GitUserDate;
   comment: string;
-  committer?: { name?: string; date?: string };
-  author?: { name?: string; date?: string };
-}
-
-export interface GitCommitChangesResponse {
-  changes: { item: { path: string } }[];
-}
-
-// Type definition for a Git commit object
-export interface GitCommit {
-  commitId: string;
-  author: {
-    name: string;
-    email: string;
-    date: string;
+  changeCounts?: {
+    Add: number;
+    Edit: number;
+    Delete: number;
   };
-  committer: {
-    name: string;
-    email: string;
-    date: string;
-  };
-  message: string;
+  changes?: GitChange[];
   parents?: string[];
-  // Add more fields as needed for your use case
+  _links?: Record<string, { href: string }>;
+}
+
+export interface GitChange {
+  changeType: string;
+  item: {
+    gitObjectType: string;
+    path: string;
+    url: string;
+  };
+  newContent?: {
+    content: string;
+    contentType: string;
+  };
+  originalPath?: string;
+}
+
+export interface GitRepository {
+  id: string;
+  name: string;
+  url: string;
+  project: {
+    id: string;
+    name: string;
+    state: string;
+    visibility: string;
+    lastUpdateTime: string;
+  };
+  size: number;
+  remoteUrl: string;
+  sshUrl: string;
+  webUrl: string;
+  defaultBranch: string;
+}
+
+export interface GitBranchStats {
+  name: string;
+  aheadCount: number;
+  behindCount: number;
+  commit: GitCommitRef;
+  isBaseVersion: boolean;
+}
+
+export interface GetCommitsResponse {
+  value: GitCommitRefFull[];
+  count: number;
+}
+
+export interface GitPush {
+  pushId: number;
+  date: string;
+  pushedBy: {
+    id: string;
+    displayName: string;
+    uniqueName: string;
+  };
+  commits: GitCommitRefFull[];
+  refUpdates: {
+    name: string;
+    oldObjectId: string;
+    newObjectId: string;
+  }[];
+  repository: GitRepository;
+  _links?: Record<string, { href: string }>;
 }

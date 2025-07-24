@@ -1,22 +1,20 @@
 import { PipelineRun, Timeline, TimelineRecord } from "./interfaces/pipeline";
 import { GitCommitRefFull } from "./interfaces/git";
-import { GitPullRequest, GetPullRequestsResponse } from "./interfaces/ado"; // Import ADO interfaces
+import { GitPullRequest, GetPullRequestsResponse } from "./interfaces/ado";
 
-// Utility function for chunking arrays
 function chunkArray<T>(arr: T[], n: number): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < arr.length; i += n) result.push(arr.slice(i, i + n));
   return result;
 }
 
-// Define an interface for the configuration
 export interface AdcPipelineViewerConfig {
   organizationUrl: string;
   projectName: string;
   pipelineDefinitionId: number;
   targetStageName: string;
   repositoryId: string;
-  relevantPathFilter?: string; // Optional
+  relevantPathFilter?: string;
 }
 
 function getAzureDevOpsApiBaseUrl(orgUrl: string): string {
@@ -36,9 +34,8 @@ function getAzureDevOpsApiBaseUrl(orgUrl: string): string {
 
 export async function findLatestDeployedRun(
   accessToken: string,
-  config: AdcPipelineViewerConfig // Add config parameter
+  config: AdcPipelineViewerConfig
 ): Promise<PipelineRun | null> {
-  // Use config parameter directly
   const {
     organizationUrl,
     projectName,
@@ -49,29 +46,19 @@ export async function findLatestDeployedRun(
   const runsUrl = `${organizationUrl}/${projectName}/_apis/build/builds?definitions=${pipelineDefinitionId}&statusFilter=completed&$top=50&queryOrder=finishTimeDescending&properties=sourceVersion&includeLatestBuilds=true&api-version=7.1-preview.7`;
   const headers = { Authorization: `Bearer ${accessToken}` };
   try {
-    console.log("Fetching runs from:", runsUrl);
     const runsResponse = await fetch(runsUrl, { headers } as any).then((r) =>
       r.json()
     );
     const recentCompletedSuccessfulRuns: PipelineRun[] = runsResponse.value;
-    console.log(
-      `Found ${
-        recentCompletedSuccessfulRuns?.length || 0
-      } completed successful runs`
-    );
 
     if (
       !recentCompletedSuccessfulRuns ||
       recentCompletedSuccessfulRuns.length === 0
     ) {
-      console.log("No completed successful runs found");
       return null;
     }
 
     for (const run of recentCompletedSuccessfulRuns) {
-      console.log(
-        `Checking run ${run.id} (${run.buildNumber}) for target stage: ${targetStageName}`
-      );
       const timelineUrl = `${organizationUrl}/${projectName}/_apis/build/builds/${run.id}/timeline?api-version=7.1`;
       try {
         const timelineResponse = await fetch(timelineUrl, {
@@ -79,52 +66,24 @@ export async function findLatestDeployedRun(
         } as any).then((r) => r.json());
         const timeline: Timeline = timelineResponse;
 
-        console.log(
-          `Run ${run.id} has ${timeline.records?.length || 0} timeline records`
-        );
-        const stageRecords = timeline.records.filter(
-          (record) => record.type === "Stage"
-        );
-        console.log(
-          `Available stages: ${stageRecords.map((s) => s.name).join(", ")}`
-        );
-
         const targetStageRecord = timeline.records.find(
           (record: TimelineRecord) =>
-            record.type === "Stage" && record.name === targetStageName // Use config value
+            record.type === "Stage" && record.name === targetStageName
         );
-
-        if (targetStageRecord) {
-          console.log(
-            `Found target stage "${targetStageName}" - state: ${targetStageRecord.state}, result: ${targetStageRecord.result}`
-          );
-        } else {
-          console.log(
-            `Target stage "${targetStageName}" not found in this run`
-          );
-        }
 
         if (
           targetStageRecord &&
           targetStageRecord.state === "completed" &&
           targetStageRecord.result === "succeeded"
         ) {
-          console.log(
-            `✅ Found matching deployment: Run ${run.id} with successful ${targetStageName} stage`
-          );
           return run;
         }
       } catch (timelineError) {
-        console.error(
-          `Error fetching timeline for run ${run.id}:`,
-          timelineError
-        );
+        continue;
       }
     }
-    console.log("No runs found with successful target stage deployment");
     return null;
   } catch (error) {
-    console.error("Error in findLatestDeployedRun:", error);
     return null;
   }
 }
@@ -132,9 +91,8 @@ export async function findLatestDeployedRun(
 export async function fetchLastNBuilds(
   accessToken: string,
   count: number,
-  config: AdcPipelineViewerConfig // Add config parameter
+  config: AdcPipelineViewerConfig
 ): Promise<PipelineRun[]> {
-  // Use config parameter directly
   const { organizationUrl, projectName, pipelineDefinitionId, repositoryId } =
     config;
   const apiBaseUrl = getAzureDevOpsApiBaseUrl(organizationUrl);
@@ -147,7 +105,6 @@ export async function fetchLastNBuilds(
     );
     const runs: PipelineRun[] = response.value || [];
 
-    // Fetch commit messages for each run
     const runsWithMessages = await Promise.all(
       runs.map(async (run) => {
         let commitMessage: string | undefined = undefined;
@@ -159,11 +116,7 @@ export async function fetchLastNBuilds(
             } as any).then((r) => r.json());
             commitMessage = commitResponse.comment || undefined;
           } catch (commitError) {
-            console.error(
-              `Failed to fetch commit message for ${run.sourceVersion}:`,
-              commitError
-            );
-            // Keep going even if one commit fetch fails
+            // Ignore error and continue
           }
         }
         return {
@@ -172,14 +125,13 @@ export async function fetchLastNBuilds(
           finishTime: run.finishTime || undefined,
           result: run.result || undefined,
           status: run.status || undefined,
-          commitMessage: commitMessage, // Add the fetched message
+          commitMessage: commitMessage,
         };
       })
     );
 
     return runsWithMessages;
   } catch (error) {
-    console.error("Error fetching last N builds:", error);
     return [];
   }
 }
@@ -188,12 +140,11 @@ export async function fetchCommitRangeData(
   accessToken: string,
   olderRun: PipelineRun,
   selectedBuild: PipelineRun,
-  config: AdcPipelineViewerConfig // Add config parameter
+  config: AdcPipelineViewerConfig
 ): Promise<{
   committerMap: { [committer: string]: string[] };
   error?: string;
 }> {
-  // Use config parameter directly
   const { organizationUrl, projectName, repositoryId, relevantPathFilter } =
     config;
 
@@ -255,7 +206,6 @@ export async function fetchCommitRangeData(
             (c: any) => c.item?.path || ""
           );
 
-          // Split the filter string into an array of patterns
           const pathPatterns = relevantPathFilter
             ? relevantPathFilter
                 .split(",")
@@ -263,9 +213,8 @@ export async function fetchCommitRangeData(
                 .filter((pattern) => pattern.length > 0)
             : [];
 
-          // Check if any affected path includes any of the specified patterns
           if (
-            pathPatterns.length === 0 || // If no filter is provided, include all changes
+            pathPatterns.length === 0 ||
             affectedPaths.some(
               (p: string) =>
                 p && pathPatterns.some((pattern) => p.includes(pattern))
@@ -273,7 +222,7 @@ export async function fetchCommitRangeData(
           ) {
             const committerName = commit.committer?.name || "Unknown";
             const match = commit.comment.match(prIdRegex);
-            const prNumber = match && match[1] ? match[1] : null;
+            const prNumber = match?.[1] ? match[1] : null;
             if (!prNumber) return;
             const prLink = `${organizationUrl}/${projectName}/_git/${repositoryId}/pullrequest/${prNumber}`;
             const mergeTitle = commit.comment;
@@ -282,7 +231,7 @@ export async function fetchCommitRangeData(
             committerMap[committerName].push(prLine);
           }
         } catch {
-          // Ignore errors for individual commit processing
+          return;
         }
       });
       await Promise.all(promises);
@@ -293,21 +242,15 @@ export async function fetchCommitRangeData(
   }
 }
 
-// --- Code Review Functions ---
-
-/**
- * Finds the active pull request associated with a given source branch.
- */
 export async function getActivePullRequestForBranch(
   accessToken: string,
-  branchName: string, // e.g., "refs/heads/feature/my-feature"
+  branchName: string,
   config: AdcPipelineViewerConfig
 ): Promise<GitPullRequest | null> {
   const { organizationUrl, projectName, repositoryId } = config;
   const apiBaseUrl = getAzureDevOpsApiBaseUrl(organizationUrl);
   const headers = { Authorization: `Bearer ${accessToken}` };
 
-  // Ensure branchName is in the correct format (refs/heads/...)
   const sourceRef = branchName.startsWith("refs/heads/") ? branchName : `refs/heads/${branchName}`;
 
   const prsUrl = `${apiBaseUrl}/${projectName}/_apis/git/repositories/${repositoryId}/pullrequests?searchCriteria.sourceRefName=${encodeURIComponent(sourceRef)}&searchCriteria.status=active&api-version=7.1-preview.1`;
@@ -316,12 +259,10 @@ export async function getActivePullRequestForBranch(
     const response = await fetch(prsUrl, { headers } as any).then((r) => r.json());
     const prs: GetPullRequestsResponse = response;
     if (prs.value && prs.value.length > 0) {
-      // Return the first active PR found for the branch
-      return prs.value[0];
+      return prs.value[0] || null;
     }
     return null;
   } catch (error: any) {
-    console.error("Error fetching active pull request:", error);
     return null;
   }
 }

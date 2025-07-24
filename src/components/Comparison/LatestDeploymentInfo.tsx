@@ -64,7 +64,7 @@ const useStyles = makeStyles({
   },
 });
 
-function getTimeAgo(dateString: string | undefined): string {
+function getTimeAgo(dateString: string | null | undefined): string {
   if (!dateString) return 'N/A';
 
   const date = new Date(dateString);
@@ -105,14 +105,18 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
           <div className={styles.deploymentDetails}>
             <div>
               <span className={styles.detailLabel}>Build:</span>{" "}
-              <Link
-                href={run._links.web.href}
-                target="_blank"
-                rel="noreferrer"
-                className={styles.link}
-              >
-                {run.buildNumber}
-              </Link>
+              {run._links?.web?.href ? (
+                <Link
+                  href={run._links.web.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.link}
+                >
+                  {run.buildNumber}
+                </Link>
+              ) : (
+                <span>{run.buildNumber}</span>
+              )}
               {` (ID: ${run.id})`}
             </div>
             <div>
@@ -142,14 +146,20 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
           </div>
         </div>
         <div>
-          <Link
-            href={run._links.web.href}
-            target="_blank"
-            rel="noreferrer"
-            className={styles.link}
-          >
-            View in Azure DevOps
-          </Link>
+          {run._links?.web?.href ? (
+            <Link
+              href={run._links.web.href}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.link}
+            >
+              View in Azure DevOps
+            </Link>
+          ) : (
+            <span className={styles.link} style={{ opacity: 0.5 }}>
+              View in Azure DevOps (URL not available)
+            </span>
+          )}
         </div>
       </div>
     </div>

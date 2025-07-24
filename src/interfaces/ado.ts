@@ -1,9 +1,7 @@
-// Interfaces related to Azure DevOps REST API responses
-
 export interface IdentityRef {
   displayName: string;
   url: string;
-  _links: any;
+  _links: Record<string, { href: string }>;
   id: string;
   uniqueName: string;
   imageUrl: string;
@@ -29,22 +27,22 @@ export interface GitPullRequest {
   };
   pullRequestId: number;
   codeReviewId: number;
-  status: string; // e.g., "active", "completed", "abandoned"
+  status: string;
   createdBy: IdentityRef;
-  creationDate: string; // ISO 8601 date string
+  creationDate: string;
   title: string;
   description: string;
-  sourceRefName: string; // e.g., "refs/heads/feature/my-feature"
-  targetRefName: string; // e.g., "refs/heads/main"
+  sourceRefName: string;
+  targetRefName: string;
   mergeStatus: string;
   isDraft: boolean;
   mergeId: string;
   lastMergeSourceCommit: { commitId: string; url: string };
   lastMergeTargetCommit: { commitId: string; url: string };
   lastMergeCommit: { commitId: string; url: string };
-  reviewers: any[]; // Can be more specific if needed
+  reviewers: IdentityRef[];
   url: string;
-  _links: any;
+  _links: Record<string, { href: string }>;
   supportsIterations: boolean;
   artifactId: string;
 }
@@ -56,14 +54,14 @@ export interface GitPullRequestCommentThread {
       firstComparingIteration: number;
       secondComparingIteration: number;
     };
-    trackingCriteria: any; // Can be more specific if needed
+    trackingCriteria: Record<string, unknown>;
   } | null;
   id: number;
-  publishedDate: string; // ISO 8601 date string
-  lastUpdatedDate: string; // ISO 8601 date string
+  publishedDate: string;
+  lastUpdatedDate: string;
   comments: GitPullRequestComment[];
-  identities: any; // Dictionary of identities involved
-  properties: any; // Custom properties
+  identities: Record<string, IdentityRef>;
+  properties: Record<string, unknown>;
   isDeleted: boolean;
   threadContext: {
     filePath: string;
@@ -72,8 +70,8 @@ export interface GitPullRequestCommentThread {
     leftFileStart: { line: number; offset: number } | null;
     leftFileEnd: { line: number; offset: number } | null;
   } | null;
-  status: string; // e.g., "active", "fixed", "wontFix", "closed", "byDesign"
-  _links: any;
+  status: string;
+  _links: Record<string, { href: string }>;
 }
 
 export interface GitPullRequestComment {
@@ -81,33 +79,29 @@ export interface GitPullRequestComment {
   parentCommentId: number;
   author: IdentityRef;
   content: string;
-  publishedDate: string; // ISO 8601 date string
-  lastUpdatedDate: string; // ISO 8601 date string
-  lastContentUpdatedDate: string; // ISO 8601 date string
-  commentType: string; // e.g., "text", "codeChange", "system"
+  publishedDate: string;
+  lastUpdatedDate: string;
+  lastContentUpdatedDate: string;
+  commentType: string;
   usersLiked: IdentityRef[];
   isDeleted: boolean;
-  _links: any;
+  _links: Record<string, { href: string }>;
 }
 
-// Interface for the response when fetching multiple threads
 export interface GetPullRequestThreadsResponse {
   value: GitPullRequestCommentThread[];
   count: number;
 }
 
-// Interface for the response when fetching multiple pull requests
 export interface GetPullRequestsResponse {
     value: GitPullRequest[];
     count: number;
 }
 
-// Interface for updating a thread status
 export interface UpdateThreadStatusPayload {
-    status: string; // e.g., "1" for Active, "2" for ByDesign, "3" for Closed, "4" for Fixed, "5" for WontFix
+    status: string;
 }
 
-// Interface for updating a comment
 export interface UpdateCommentPayload {
     content: string;
 }

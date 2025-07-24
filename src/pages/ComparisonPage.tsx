@@ -7,16 +7,15 @@ import {
   Title1,
   Body1,
 } from "@fluentui/react-components";
-import { BuildSelector } from "../components/Comparison"; // Updated import path
+import { BuildSelector } from "../components/Comparison";
 import { useAuthAndConfig } from "../hooks/useAccessToken";
 import { useBuildData } from "../hooks/useBuildData";
 import { useCommitComparison } from "../hooks/useCommitComparison";
-import { LatestDeploymentInfo } from "../components/Comparison/LatestDeploymentInfo"; // Updated import path
-import { CommitComparisonResults } from "../components/Comparison/CommitComparisonResults"; // Updated import path
-import { ComparisonActions } from "../components/Comparison/ComparisonActions"; // Updated import path
-import { generatePlainTextResults } from "../utils/generatePlainTextResults"; // Updated import path
+import { LatestDeploymentInfo } from "../components/Comparison/LatestDeploymentInfo";
+import { CommitComparisonResults } from "../components/Comparison/CommitComparisonResults";
+import { ComparisonActions } from "../components/Comparison/ComparisonActions";
+import { generatePlainTextResults } from "../utils/generatePlainTextResults";
 
-// Define styles using makeStyles
 const useStyles = makeStyles({
   root: {
     ...shorthands.padding("24px"),
@@ -119,7 +118,6 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
       setCopyStatus("Copied!");
       setTimeout(() => setCopyStatus(""), 2000);
     } catch (err) {
-      console.error("Failed to copy results: ", err);
       setCopyStatus("Failed to copy");
       setTimeout(() => setCopyStatus(""), 2000);
     }
@@ -188,16 +186,13 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
         </>
       )}
 
-      {/* Results are now rendered inside ComparisonActions or BuildSelector based on state */}
-      {/* Render comparison results only when not loading and results/error exist */}
       {!comparisonLoading && (committerMap || comparisonError) && (
         <CommitComparisonResults
           committerMap={committerMap}
-          loading={false} // Pass loading false as spinner is handled above
+          loading={false}
           error={comparisonError}
         />
       )}
-      {/* Show comparison spinner separately */}
       {comparisonLoading && (
         <Spinner
           className={styles.loadingSpinner}

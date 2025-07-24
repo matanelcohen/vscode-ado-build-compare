@@ -57,15 +57,19 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
       </Body1>
       <Body1 className={styles.text}>
         <Body1Strong className={styles.label}>Link:</Body1Strong>{" "}
-        <Link
-          href={run._links.web.href}
-          target="_blank"
-          rel="noreferrer"
-          className={styles.link}
-          inline // Render link inline with text
-        >
-          View in ADO
-        </Link>
+        {run._links?.web?.href ? (
+          <Link
+            href={run._links.web.href}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.link}
+            inline // Render link inline with text
+          >
+            View in ADO
+          </Link>
+        ) : (
+          <span style={{ opacity: 0.5 }}>View in ADO (URL not available)</span>
+        )}
       </Body1>
     </div>
   );
