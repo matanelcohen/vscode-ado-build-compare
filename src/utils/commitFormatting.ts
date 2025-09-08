@@ -1,13 +1,11 @@
-// import { GitCommit } from '../interfaces/git';
-import type { GitCommit } from '../interfaces/git'; // Use 'import type' if GitCommit is a type, or update the import to match the actual export
+import type { GitCommit } from 'azure-devops-node-api/interfaces/GitInterfaces';
 
 export function commitToString(commit: string | GitCommit): string {
   if (typeof commit === 'string') {
     return commit;
   }
-  // Type guard: check if commit has a 'message' property
-  if ('message' in commit && typeof commit.message === 'string') {
-    return commit.message.split('\n')[0] || 'No commit message';
+  if ('comment' in commit && typeof commit.comment === 'string') {
+    return commit.comment.split('\n')[0] || 'No commit message';
   }
   return 'No commit message';
 }

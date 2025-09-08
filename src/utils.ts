@@ -9,30 +9,27 @@ export function generateMarkdownForTeams(
 
   Object.keys(committerMap).forEach((committer) => {
     markdown += `**${committer}:**\n`;
-    committerMap[committer].forEach((line) => {
-      let cleanedLine = line.replace(/<[^>]*>/g, "").trim();
-      cleanedLine = cleanedLine.replace(/^\*?\s*/, "");
-      const linkRegex =
-        /(\[(.*?)\]\((https?:\/\/[^)]+)\))|(https?:\/\/[^\s]+)/g;
-      cleanedLine = cleanedLine.replace(
-        linkRegex,
-        (
-          match,
-          existingMarkdownLink,
-          linkText,
-          urlFromMarkdown,
-          standaloneUrl
-        ) => {
-          if (existingMarkdownLink) {
-            return existingMarkdownLink;
-          } else if (standaloneUrl) {
-            return `[link](${standaloneUrl})`;
+    const lines = committerMap[committer];
+    if (lines) {
+      lines.forEach((line) => {
+        let cleanedLine = line.replace(/<[^>]*>/g, "").trim();
+        cleanedLine = cleanedLine.replace(/^\*?\s*/, "");
+        const linkRegex =
+          /(\[(.*?)\]\((https?:\/\/[^)]+)\))|(https?:\/\/[^\s]+)/g;
+        cleanedLine = cleanedLine.replace(
+          linkRegex,
+          (match, existingMarkdownLink, _, __, standaloneUrl) => {
+            if (existingMarkdownLink) {
+              return existingMarkdownLink;
+            } else if (standaloneUrl) {
+              return `[link](${standaloneUrl})`;
+            }
+            return match;
           }
-          return match;
-        }
-      );
-      markdown += `* ${cleanedLine}\n`;
-    });
+        );
+        markdown += `* ${cleanedLine}\n`;
+      });
+    }
     markdown += "\n";
   });
 

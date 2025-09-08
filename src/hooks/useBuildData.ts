@@ -1,10 +1,10 @@
 import * as React from "react";
-import { PipelineRun } from "../interfaces/pipeline";
+import { PipelineRun } from "../api-sdk";
 import {
   findLatestDeployedRun,
   fetchLastNBuilds,
   AdcPipelineViewerConfig,
-} from "../api";
+} from "../api-sdk";
 
 export function useBuildData(
   accessToken: string | null,

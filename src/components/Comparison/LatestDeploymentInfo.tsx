@@ -7,7 +7,7 @@ import {
   Text,
   Link,
 } from "@fluentui/react-components";
-import { PipelineRun } from '../../interfaces/pipeline';
+import { PipelineRun } from "../../api-sdk";
 
 const useStyles = makeStyles({
   card: {
@@ -54,6 +54,18 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorPaletteRedBackground1,
     color: tokens.colorPaletteRedForeground1,
   },
+  commitMessage: {
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase200,
+    marginTop: "8px",
+    padding: "8px",
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderRadius: tokens.borderRadiusSmall,
+    lineHeight: "1.4",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    fontFamily: tokens.fontFamilyBase,
+  },
   viewButton: {},
   link: {
     color: tokens.colorBrandForegroundLink,
@@ -65,16 +77,17 @@ const useStyles = makeStyles({
 });
 
 function getTimeAgo(dateString: string | null | undefined): string {
-  if (!dateString) return 'N/A';
+  if (!dateString) return "N/A";
 
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
 
   return date.toLocaleDateString();
 }
@@ -94,6 +107,7 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
     : "Unknown";
   const timeAgo = getTimeAgo(run.finishTime);
   const hasValidCommit = !!run.sourceVersion;
+  const commitMessage = run.commitMessage?.trim();
 
   return (
     <div className={styles.card}>
@@ -144,6 +158,14 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
               </span>
             </div>
           </div>
+          {commitMessage && (
+            <div>
+              <div style={{ marginTop: "8px", marginBottom: "4px" }}>
+                <span className={styles.detailLabel}>Message:</span>
+              </div>
+              <div className={styles.commitMessage}>{commitMessage}</div>
+            </div>
+          )}
         </div>
         <div>
           {run._links?.web?.href ? (

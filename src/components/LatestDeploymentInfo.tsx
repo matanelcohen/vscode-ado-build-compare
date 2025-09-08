@@ -6,7 +6,7 @@ import {
   Body1,
   Body1Strong,
 } from "@fluentui/react-components";
-import { PipelineRun } from "../interfaces/pipeline";
+import { PipelineRun } from "../api-sdk";
 
 interface LatestDeploymentInfoProps {
   run: PipelineRun;
@@ -32,7 +32,18 @@ const useStyles = makeStyles({
   },
   label: {
     display: "inline-block",
-    minWidth: "70px", // Align values
+    minWidth: "80px", // Align values
+  },
+  commitMessage: {
+    color: "var(--vscode-descriptionForeground)",
+    marginTop: tokens.spacingVerticalXS,
+    padding: tokens.spacingVerticalS,
+    backgroundColor: "var(--vscode-textCodeBlock-background)",
+    borderRadius: tokens.borderRadiusSmall,
+    fontSize: tokens.fontSizeBase200,
+    lineHeight: "1.4",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
   },
 });
 
@@ -41,6 +52,8 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
   title,
 }) => {
   const styles = useStyles();
+  const commitMessage = run.commitMessage?.trim();
+
   return (
     <div className={styles.root}>
       <Body1 className={styles.text}>
@@ -51,6 +64,14 @@ export const LatestDeploymentInfo: React.FC<LatestDeploymentInfoProps> = ({
         <Body1Strong className={styles.label}>Commit:</Body1Strong>{" "}
         {run.sourceVersion ? run.sourceVersion.substring(0, 8) : "N/A"}
       </Body1>
+      {commitMessage && (
+        <div>
+          <Body1 className={styles.text}>
+            <Body1Strong className={styles.label}>Message:</Body1Strong>
+          </Body1>
+          <div className={styles.commitMessage}>{commitMessage}</div>
+        </div>
+      )}
       <Body1 className={styles.text}>
         <Body1Strong className={styles.label}>Finished:</Body1Strong>{" "}
         {run.finishTime ? new Date(run.finishTime).toLocaleString() : "N/A"}

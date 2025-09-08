@@ -1,6 +1,5 @@
-// src/hooks/useAuthAndConfig.ts
 import * as React from "react";
-import { AdcPipelineViewerConfig } from "../api";
+import { AdcPipelineViewerConfig } from "../api-sdk";
 
 interface VsCodeApi {
   postMessage: (message: any) => void;

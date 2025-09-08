@@ -4,11 +4,26 @@
   "description": "Azure DevOps build comparison and analysis tools",
   "version": "0.1.0",
   "publisher": "matanelcohen",
+  "license": "MIT",
   "icon": "media/logo2.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/matanelcohen_microsoft/adoBuildCompare.git"
+    "url": "https://github.com/matanelcohen/vscode-ado-build-compare.git"
   },
+  "bugs": {
+    "url": "https://github.com/matanelcohen/vscode-ado-build-compare/issues"
+  },
+  "homepage": "https://github.com/matanelcohen/vscode-ado-build-compare#readme",
+  "keywords": [
+    "azure-devops",
+    "ado",
+    "build",
+    "pipeline",
+    "comparison",
+    "git",
+    "deployment",
+    "ci-cd"
+  ],
   "sideEffects": false,
   "engines": {
     "vscode": "^1.80.0"
@@ -147,6 +162,7 @@
     "@fluentui/react-components": "^9.63.0",
     "@fluentui/react-icons": "^2.0.247",
     "axios": "^1.6.0",
+    "azure-devops-node-api": "^15.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
