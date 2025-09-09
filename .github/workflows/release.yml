@@ -130,19 +130,30 @@ jobs:
     - name: Publish to VS Code Marketplace
       if: |
         (github.event_name == 'workflow_dispatch' && github.event.inputs.create_marketplace_release == 'true') ||
-        (github.event_name == 'push' && env.VSCE_PAT != '')
+        (github.event_name == 'push' && secrets.VSCE_PAT != '')
       env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
       run: |
-        vsce publish --packagePath ${{ steps.package_name.outputs.name }} --pat $VSCE_PAT
+        if [ -z "$VSCE_PAT" ]; then
+          echo "❌ VSCE_PAT is not set. Skipping marketplace publish."
+          echo "To publish to marketplace, add VSCE_PAT secret to repository settings."
+          exit 1
+        fi
+        echo "🚀 Publishing to VS Code Marketplace..."
+        vsce publish --packagePath ${{ steps.package_name.outputs.name }} --pat "$VSCE_PAT"
 
     - name: Publish to Open VSX Registry
-      if: env.OVSX_PAT != ''
+      if: secrets.OVSX_PAT != ''
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
       run: |
+        if [ -z "$OVSX_PAT" ]; then
+          echo "ℹ️  OVSX_PAT is not set. Skipping Open VSX publish."
+          exit 0
+        fi
+        echo "🚀 Publishing to Open VSX Registry..."
         npm install -g ovsx
-        ovsx publish ${{ steps.package_name.outputs.name }} --pat $OVSX_PAT
+        ovsx publish ${{ steps.package_name.outputs.name }} --pat "$OVSX_PAT"
 
     - name: Output release info
       run: |
