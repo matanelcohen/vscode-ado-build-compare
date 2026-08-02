@@ -2,6 +2,13 @@
 
 All notable changes to Build Compare Tools are documented here.
 
+## [2.1.1] - 2026-08-02
+
+### Changed
+
+- Republished the verified 2.1 release through the corrected Marketplace
+  identity and authenticated release workflow.
+
 ## [2.1.0] - 2026-08-02
 
 ### Added
