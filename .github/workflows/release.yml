@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
@@ -59,7 +59,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -90,20 +90,30 @@ jobs:
           PACKAGE: ${{ steps.package.outputs.path }}
         shell: bash
         run: |
-          gh release create "$TAG" "$PACKAGE" \
-            --verify-tag \
-            --title "Build Compare Tools $VERSION" \
-            --generate-notes \
-            --notes "Professional release intelligence for Azure DevOps: native VS Code dashboard, guided onboarding, multi-environment profiles, risk analysis, Copilot summaries, Teams Adaptive Cards, history, drift analysis, exports, and work-item creation. Requires VS Code 1.91 or later and Microsoft authentication."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$PACKAGE" --clobber
+          else
+            gh release create "$TAG" "$PACKAGE" \
+              --verify-tag \
+              --title "Build Compare Tools $VERSION" \
+              --generate-notes \
+              --notes "Professional release intelligence for Azure DevOps: native VS Code dashboard, guided onboarding, multi-environment profiles, risk analysis, Copilot summaries, Teams Adaptive Cards, history, drift analysis, exports, and work-item creation. Requires VS Code 1.91 or later and Microsoft authentication."
+          fi
 
       - name: Publish to VS Code Marketplace
         if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.create_marketplace_release) ||
-          (github.event_name == 'push' && env.VSCE_PAT != '')
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.create_marketplace_release)
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           PACKAGE: ${{ steps.package.outputs.path }}
-        run: npx vsce publish --packagePath "$PACKAGE" --pat "$VSCE_PAT"
+        shell: bash
+        run: |
+          if [[ -z "$VSCE_PAT" ]]; then
+            echo "::error::Add a VSCE_PAT repository secret with Marketplace Manage permission."
+            exit 1
+          fi
+          npx vsce publish --packagePath "$PACKAGE" --pat "$VSCE_PAT"
 
       - name: Publish to Open VSX Registry
         if: env.OVSX_PAT != ''
