@@ -33,7 +33,7 @@ Before installing the extension, ensure you have:
 
 3. **Search for Extension**
    - Type "Build Compare Tools" in the search box
-   - Look for the extension by "matanelcohen"
+   - Look for extension ID `matancohenmsft.fe-ninja-tools`
 
    ![Search Extension](./docs/images/search-extension.png)
 

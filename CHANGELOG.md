@@ -2,6 +2,13 @@
 
 All notable changes to Build Compare Tools are documented here.
 
+## [2.0.2] - 2026-08-02
+
+### Fixed
+
+- Restored the Marketplace publisher identity to
+  `matancohenmsft.fe-ninja-tools` so releases update the existing extension.
+
 ## [2.0.1] - 2026-08-02
 
 ### Fixed
