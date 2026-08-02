@@ -66,6 +66,10 @@ const useStyles = makeStyles({
     fontFamily: tokens.fontFamilyMonospace,
   },
   empty: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    rowGap: tokens.spacingVerticalS,
     textAlign: "center",
     ...shorthands.padding(tokens.spacingVerticalXXL),
     backgroundColor: tokens.colorNeutralBackground2,

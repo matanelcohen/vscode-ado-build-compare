@@ -2,6 +2,12 @@
 
 All notable changes to Build Compare Tools are documented here.
 
+## [2.0.1] - 2026-08-02
+
+### Fixed
+
+- Restored spacing between the Changes tab empty-state heading and description.
+
 ## [2.0.0] - 2026-08-02
 
 ### Added
