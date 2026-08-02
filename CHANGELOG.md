@@ -10,6 +10,8 @@ All notable changes to ReleaseLens for Azure DevOps are documented here.
   pipeline profiles, replacing the chained input boxes and quick picks with a
   single editable form that discovers projects, repositories, pipelines, and
   deployment stages on demand.
+- Onboarding screenshots in the README showing the guided setup steps,
+  discovery, a completed profile, and the saved profile list.
 
 ## [3.1.1] - 2026-08-02
 
