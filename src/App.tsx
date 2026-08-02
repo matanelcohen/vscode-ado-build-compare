@@ -28,6 +28,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
   const fluentTheme = vscodeThemeToFluentTheme[vscodeTheme] || webDarkTheme;
 
   React.useEffect(() => {
+    vscode.postMessage({ command: "webviewReady" });
+  }, [vscode]);
+
+  React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
       switch (message.type) {

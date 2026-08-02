@@ -20,57 +20,14 @@ import {
   buildAiSummaryPrompt,
   generateDeterministicSummary,
 } from "./utils/riskAnalysis";
+import { DashboardTreeProvider } from "./services/DashboardTreeProvider";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
+let webviewReady = false;
+let pendingComparison: unknown;
 const teamsWebhookSecretKey = "buildCompareTools.teamsWorkflowWebhook";
 const teamsDestinationStateKey = "buildCompareTools.teamsDestinationName";
 const automationStateKey = "buildCompareTools.automationState.v1";
-
-class BuildCompareViewProvider implements vscode.WebviewViewProvider {
-  constructor(private readonly context: vscode.ExtensionContext) {}
-
-  resolveWebviewView(webviewView: vscode.WebviewView): void {
-    webviewView.webview.options = {
-      enableScripts: true,
-    };
-
-    webviewView.webview.html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: var(--vscode-font-family);
-            color: var(--vscode-foreground);
-          }
-          .message {
-            text-align: center;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="message">
-          <p>Opening Build Compare Tools...</p>
-        </div>
-        <script>
-          setTimeout(() => {
-            window.parent.postMessage({ command: 'openReactApp' }, '*');
-          }, 100);
-        </script>
-      </body>
-      </html>
-    `;
-
-    setTimeout(() => {
-      vscode.commands.executeCommand("fe-ninja-tools.showPipelines");
-    }, 100);
-  }
-}
 
 function getLegacyExtensionConfig(): AdcPipelineViewerConfig | null {
   const config = vscode.workspace.getConfiguration("buildCompareTools");
@@ -205,6 +162,47 @@ export function activate(context: vscode.ExtensionContext) {
   const profileInitialization = profileStore.initialize(
     getLegacyExtensionConfig()
   );
+  const dashboardProvider = new DashboardTreeProvider(
+    profileStore,
+    comparisonHistory,
+    async () =>
+      Boolean(await context.secrets.get(teamsWebhookSecretKey))
+  );
+  const statusBar = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left,
+    100
+  );
+  statusBar.command = "fe-ninja-tools.showPipelines";
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider(
+      "build-compare-view",
+      dashboardProvider
+    ),
+    statusBar
+  );
+  const refreshChrome = async () => {
+    await profileInitialization;
+    const snapshot = profileStore.getSnapshot();
+    await vscode.commands.executeCommand(
+      "setContext",
+      "buildCompareTools.hasProfile",
+      Boolean(snapshot.activeProfile)
+    );
+    await vscode.commands.executeCommand(
+      "setContext",
+      "buildCompareTools.hasMultipleProfiles",
+      snapshot.profiles.length > 1
+    );
+    if (snapshot.activeProfile) {
+      statusBar.text = `$(compare-changes) ${snapshot.activeProfile.name}`;
+      statusBar.tooltip = `Build Compare Tools · ${snapshot.activeProfile.config.targetStageName}`;
+      statusBar.show();
+    } else {
+      statusBar.hide();
+    }
+    dashboardProvider.refresh();
+  };
+  void refreshChrome();
   let automationRunning = false;
   const runAutomations = async () => {
     if (automationRunning) {
@@ -312,14 +310,6 @@ export function activate(context: vscode.ExtensionContext) {
       clearInterval(automationTimer);
     },
   });
-  const viewProvider = new BuildCompareViewProvider(context);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      "build-compare-view",
-      viewProvider
-    )
-  );
-
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "fe-ninja-tools.setupProfile",
@@ -328,6 +318,7 @@ export function activate(context: vscode.ExtensionContext) {
         const profile = await runSmartOnboarding(profileStore);
         if (profile) {
           currentPanel?.webview.postMessage({ command: "profilesChanged" });
+          await refreshChrome();
           vscode.window.showInformationMessage(
             `Pipeline profile "${profile.name}" is ready.`
           );
@@ -341,6 +332,7 @@ export function activate(context: vscode.ExtensionContext) {
         const profile = await pickActiveProfile(profileStore);
         if (profile) {
           currentPanel?.webview.postMessage({ command: "profilesChanged" });
+          await refreshChrome();
         }
       }
     ),
@@ -361,6 +353,7 @@ export function activate(context: vscode.ExtensionContext) {
           }
         }
         currentPanel?.webview.postMessage({ command: "profilesChanged" });
+        await refreshChrome();
       }
     ),
     vscode.commands.registerCommand(
@@ -370,6 +363,7 @@ export function activate(context: vscode.ExtensionContext) {
         const profile = await editPipelineProfile(profileStore);
         if (profile) {
           currentPanel?.webview.postMessage({ command: "profilesChanged" });
+          await refreshChrome();
         }
       }
     )
@@ -390,9 +384,32 @@ export function activate(context: vscode.ExtensionContext) {
       async () => {
         const result = await configureTeamsWebhook(context);
         if (result.configured) {
+          await refreshChrome();
           vscode.window.showInformationMessage(
             `Teams destination "${result.destinationName ?? "configured workflow"}" is ready.`
           );
+
+        }
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("fe-ninja-tools.refresh", async () => {
+      currentPanel?.webview.postMessage({ command: "profilesChanged" });
+      await refreshChrome();
+    }),
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.openHistoryEntry",
+      async (result) => {
+        pendingComparison = result;
+        await vscode.commands.executeCommand("fe-ninja-tools.showPipelines");
+        if (webviewReady) {
+          currentPanel?.webview.postMessage({
+            command: "loadComparison",
+            result: pendingComparison,
+          });
+          pendingComparison = undefined;
         }
       }
     )
@@ -421,6 +438,7 @@ export function activate(context: vscode.ExtensionContext) {
           retainContextWhenHidden: true,
         }
       );
+      webviewReady = false;
 
       currentPanel.webview.html = getWebviewContent(
         currentPanel.webview,
@@ -441,6 +459,17 @@ export function activate(context: vscode.ExtensionContext) {
       currentPanel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {
+            case "webviewReady": {
+              webviewReady = true;
+              if (pendingComparison) {
+                currentPanel?.webview.postMessage({
+                  command: "loadComparison",
+                  result: pendingComparison,
+                });
+                pendingComparison = undefined;
+              }
+              return;
+            }
             case "openSettings": {
               await vscode.commands.executeCommand(
                 "workbench.action.openSettings",
@@ -488,6 +517,7 @@ export function activate(context: vscode.ExtensionContext) {
                     requestId: message.requestId,
                     result: profileStore.getSnapshot(),
                   });
+                  await refreshChrome();
                 } catch (error: any) {
                   currentPanel?.webview.postMessage({
                     command: "runSmartOnboardingResponse",
@@ -506,6 +536,7 @@ export function activate(context: vscode.ExtensionContext) {
                     requestId: message.requestId,
                     result: profileStore.getSnapshot(),
                   });
+                  await refreshChrome();
                 } catch (error: any) {
                   currentPanel?.webview.postMessage({
                     command: "switchPipelineProfileResponse",
@@ -539,6 +570,7 @@ export function activate(context: vscode.ExtensionContext) {
                     requestId: message.requestId,
                     result: profileStore.getSnapshot(),
                   });
+                  await refreshChrome();
                 } catch (error: any) {
                   currentPanel?.webview.postMessage({
                     command: "deletePipelineProfileResponse",
@@ -557,6 +589,7 @@ export function activate(context: vscode.ExtensionContext) {
                   requestId: message.requestId,
                   result: profileStore.getSnapshot(),
                 });
+                await refreshChrome();
               } catch (error: any) {
                 currentPanel?.webview.postMessage({
                   command: "editPipelineProfileResponse",
@@ -631,6 +664,7 @@ export function activate(context: vscode.ExtensionContext) {
                   selectedBuild
                 );
                 await comparisonHistory.add(message.profileId, result);
+                dashboardProvider.refresh();
                 currentPanel?.webview.postMessage({
                   command: "fetchCommitRangeDataResponse",
                   requestId: message.requestId,
@@ -694,6 +728,7 @@ export function activate(context: vscode.ExtensionContext) {
                   targetRun
                 );
                 await comparisonHistory.add(message.profileId, result);
+                dashboardProvider.refresh();
                 currentPanel?.webview.postMessage({
                   command: "compareGitReferencesResponse",
                   requestId: message.requestId,
@@ -748,6 +783,7 @@ export function activate(context: vscode.ExtensionContext) {
                   targetRun
                 );
                 await comparisonHistory.add(targetProfile.id, result);
+                dashboardProvider.refresh();
                 currentPanel?.webview.postMessage({
                   command: "compareProfileEnvironmentsResponse",
                   requestId: message.requestId,
@@ -765,6 +801,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
             case "clearComparisonHistory": {
               await comparisonHistory.clear(message.profileId);
+              dashboardProvider.refresh();
               currentPanel?.webview.postMessage({
                 command: "clearComparisonHistoryResponse",
                 requestId: message.requestId,
@@ -927,6 +964,9 @@ export function activate(context: vscode.ExtensionContext) {
                   requestId: message.requestId,
                   result,
                 });
+                if (result.configured) {
+                  await refreshChrome();
+                }
               } catch (error: any) {
                 currentPanel?.webview.postMessage({
                   command: "configureTeamsWebhookResponse",
@@ -968,6 +1008,7 @@ export function activate(context: vscode.ExtensionContext) {
       currentPanel.onDidDispose(
         () => {
           currentPanel = undefined;
+          webviewReady = false;
           themeChangeListener.dispose();
           while (panelDisposables.length) {
             const d = panelDisposables.pop();

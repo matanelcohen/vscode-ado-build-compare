@@ -3,15 +3,15 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
-  workflow_dispatch:  # Allows manual triggering
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0)'
+        description: "Version tag to release (for example, v2.0.0)"
         required: true
         type: string
       create_marketplace_release:
-        description: 'Publish to VS Code Marketplace'
+        description: "Publish to the VS Code Marketplace"
         required: false
         type: boolean
         default: false
@@ -20,133 +20,94 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for creating releases
+      contents: write
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
 
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run TypeScript check
-      run: npx tsc --noEmit
-
-    - name: Build Extension
-      run: npm run compile-production
-
-    - name: Install VSCE
-      run: npm install -g @vscode/vsce
-
-    - name: Get version from tag or input
-      id: get_version
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          echo "tag_name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-        else
-          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Update package.json version
-      run: |
-        VERSION=${{ steps.get_version.outputs.version }}
-        # Remove 'v' prefix if present
-        VERSION=${VERSION#v}
-        npm version $VERSION --no-git-tag-version
-
-    - name: Build Package
-      run: npm run package
-
-    - name: Get package name
-      id: package_name
-      run: |
-        PACKAGE_NAME=$(ls *.vsix | head -n1)
-        echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.get_version.outputs.tag_name }}
-        release_name: Build Compare Tools ${{ steps.get_version.outputs.version }}
-        body: |
-          ## Build Compare Tools ${{ steps.get_version.outputs.version }}
-
-          ### 🚀 What's New
-          - Build comparison and analysis tools for Azure DevOps
-          - Activity bar integration for quick access
-          - Optimized performance with tree-shaking
-
-          ### 📦 Installation
-          1. Download the `.vsix` file below
-          2. Open VS Code
-          3. Run command: `Extensions: Install from VSIX...`
-          4. Select the downloaded file
-
-          ### 📋 Configuration Required
-          After installation, configure the extension with your Azure DevOps settings:
-          ```json
-          {
-            "buildCompareTools.organizationUrl": "https://dev.azure.com/yourorg",
-            "buildCompareTools.projectName": "YourProject",
-            "buildCompareTools.pipelineDefinitionId": 123,
-            "buildCompareTools.targetStageName": "YourStage",
-            "buildCompareTools.repositoryId": "your-repo-id",
-            "buildCompareTools.relevantPathFilter": "src/"
+      - name: Resolve and validate version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.version }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::Release tags must use vX.Y.Z."
+            exit 1
           }
-          ```
+          VERSION="${TAG#v}"
+          [[ "$(git rev-parse HEAD)" == "$(git rev-list -n 1 "$TAG")" ]] || {
+            echo "::error::The checked-out commit does not match $TAG."
+            exit 1
+          }
+          MANIFEST_VERSION="$(node -p "require('./package.json').version")"
+          [[ "$VERSION" == "$MANIFEST_VERSION" ]] || {
+            echo "::error::Tag $TAG does not match package.json version $MANIFEST_VERSION."
+            exit 1
+          }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          For detailed setup instructions, see [INSTALL.md](./INSTALL.md)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-          ### 🔧 Requirements
-          - VS Code 1.80.0 or higher
-          - Azure DevOps access with Personal Access Token
+      - name: Install dependencies
+        run: npm ci
 
-          ### 📝 Full Changelog
-          See [CHANGELOG.md](./CHANGELOG.md) for detailed changes.
-        draft: false
-        prerelease: false
+      - name: Test and build
+        run: npm run check
 
-    - name: Upload VSIX to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ steps.package_name.outputs.name }}
-        asset_name: ${{ steps.package_name.outputs.name }}
-        asset_content_type: application/zip
+      - name: Package VSIX
+        id: package
+        shell: bash
+        run: |
+          npm run package
+          PACKAGE="$(find . -maxdepth 1 -name '*.vsix' -print -quit)"
+          [[ -n "$PACKAGE" ]] || {
+            echo "::error::VSIX package was not created."
+            exit 1
+          }
+          echo "path=$PACKAGE" >> "$GITHUB_OUTPUT"
 
-    - name: Publish to VS Code Marketplace
-      if: |
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.create_marketplace_release == 'true') ||
-        (github.event_name == 'push' && env.VSCE_PAT != '')
-      env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      run: |
-        vsce publish --packagePath ${{ steps.package_name.outputs.name }} --pat $VSCE_PAT
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PACKAGE: ${{ steps.package.outputs.path }}
+        shell: bash
+        run: |
+          gh release create "$TAG" "$PACKAGE" \
+            --verify-tag \
+            --title "Build Compare Tools $VERSION" \
+            --generate-notes \
+            --notes "Professional release intelligence for Azure DevOps: native VS Code dashboard, guided onboarding, multi-environment profiles, risk analysis, Copilot summaries, Teams Adaptive Cards, history, drift analysis, exports, and work-item creation. Requires VS Code 1.91 or later and Microsoft authentication."
 
-    - name: Publish to Open VSX Registry
-      if: env.OVSX_PAT != ''
-      env:
-        OVSX_PAT: ${{ secrets.OVSX_PAT }}
-      run: |
-        npm install -g ovsx
-        ovsx publish ${{ steps.package_name.outputs.name }} --pat $OVSX_PAT
+      - name: Publish to VS Code Marketplace
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.create_marketplace_release) ||
+          (github.event_name == 'push' && env.VSCE_PAT != '')
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          PACKAGE: ${{ steps.package.outputs.path }}
+        run: npx vsce publish --packagePath "$PACKAGE" --pat "$VSCE_PAT"
 
-    - name: Output release info
-      run: |
-        echo "✅ Release created successfully!"
-        echo "📦 Package: ${{ steps.package_name.outputs.name }}"
-        echo "🔗 Release URL: ${{ steps.create_release.outputs.html_url }}"
-        echo "📋 To install: Download the .vsix file and use 'Extensions: Install from VSIX...' in VS Code"
+      - name: Publish to Open VSX Registry
+        if: env.OVSX_PAT != ''
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+          PACKAGE: ${{ steps.package.outputs.path }}
+        run: npx ovsx publish "$PACKAGE" --pat "$OVSX_PAT"

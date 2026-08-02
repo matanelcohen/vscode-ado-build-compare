@@ -7,6 +7,9 @@ import {
   Title1,
   Body1,
   Button,
+  Tab,
+  TabList,
+  TabValue,
 } from "@fluentui/react-components";
 import { ArrowClockwiseRegular, SettingsRegular } from "@fluentui/react-icons";
 import { BuildSelector } from "../components/Comparison";
@@ -25,6 +28,10 @@ import { PipelineRun } from "../api-sdk";
 import { ReferenceComparison } from "../components/Comparison/ReferenceComparison";
 import { EnvironmentDrift } from "../components/Comparison/EnvironmentDrift";
 import { generateDeterministicSummary } from "../utils/riskAnalysis";
+import {
+  ComparisonTab,
+  readComparisonTab,
+} from "../models/webviewState";
 
 const useStyles = makeStyles({
   root: {
@@ -117,6 +124,16 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
   const [copyStatus, setCopyStatus] = React.useState<string>("");
   const [releaseSummary, setReleaseSummary] = React.useState("");
   const [historyRefreshKey, setHistoryRefreshKey] = React.useState(0);
+  const [selectedTab, setSelectedTab] = React.useState<ComparisonTab>(() =>
+    readComparisonTab(vscode.getState?.())
+  );
+  const selectTab = React.useCallback(
+    (tab: ComparisonTab) => {
+      setSelectedTab(tab);
+      vscode.setState?.({ selectedTab: tab });
+    },
+    [vscode]
+  );
 
   const comparisonBuilds = React.useMemo(() => {
     const byId = new Map<number, PipelineRun>();
@@ -184,8 +201,19 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
     if (result) {
       setReleaseSummary(generateDeterministicSummary(result));
       setHistoryRefreshKey((value) => value + 1);
+      selectTab("changes");
     }
-  }, [result]);
+  }, [result, selectTab]);
+
+  React.useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.command === "loadComparison" && event.data.result) {
+        loadComparison(event.data.result);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [loadComparison]);
 
   const handleCopyResults = async () => {
     if (!result) return;
@@ -256,6 +284,18 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
         />
       )}
 
+      <TabList
+        selectedValue={selectedTab}
+        onTabSelect={(_event, data) =>
+          selectTab(data.value as ComparisonTab)
+        }
+      >
+        <Tab value={"compare" as TabValue}>Compare</Tab>
+        <Tab value={"changes" as TabValue}>Changes</Tab>
+        <Tab value={"share" as TabValue}>Share & export</Tab>
+        <Tab value={"history" as TabValue}>History</Tab>
+      </TabList>
+
       {isLoading && (
         <Spinner
           className={styles.loadingSpinner}
@@ -266,7 +306,11 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
         <Body1 className={styles.errorText}>{currentError}</Body1>
       )}
 
-      {!isLoading && !currentError && olderRun && config && (
+      {selectedTab === "compare" &&
+        !isLoading &&
+        !currentError &&
+        olderRun &&
+        config && (
         <>
           <LatestDeploymentInfo
             run={baseBuild ?? olderRun}
@@ -317,9 +361,28 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
         </>
       )}
 
-      {!comparisonLoading && result && (
+      {selectedTab === "changes" && !comparisonLoading && result && (
         <>
+          <ComparisonActions
+            onReset={() => {
+              handleReset();
+              selectTab("compare");
+            }}
+            onCopy={handleCopyResults}
+            copyStatus={copyStatus}
+            hasResults={hasResults}
+            comparisonError={comparisonError}
+            isLoading={isLoading}
+            comparisonLoading={comparisonLoading}
+          />
           <CommitComparisonResults result={result} />
+        </>
+      )}
+      {selectedTab === "changes" && !comparisonLoading && !result && (
+        <Body1>Run or open a comparison to review release changes.</Body1>
+      )}
+      {selectedTab === "share" && !comparisonLoading && result && (
+        <>
           {profile && (
             <ReportActions
               profileId={profile.id}
@@ -330,13 +393,16 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
           <TeamsShare result={result} summary={releaseSummary} />
         </>
       )}
-      {profile && !comparisonLoading && (
+      {selectedTab === "share" && !comparisonLoading && !result && (
+        <Body1>Run or open a comparison before sharing or exporting.</Body1>
+      )}
+      {selectedTab === "compare" && profile && !comparisonLoading && (
         <ReferenceComparison
           profileId={profile.id}
           onCompared={loadComparison}
         />
       )}
-      {profile && (
+      {selectedTab === "history" && profile && (
         <ComparisonHistory
           profileId={profile.id}
           refreshKey={historyRefreshKey}

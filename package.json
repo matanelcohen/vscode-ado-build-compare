@@ -2,7 +2,7 @@
   "name": "fe-ninja-tools",
   "displayName": "Build Compare Tools",
   "description": "Azure DevOps build comparison and analysis tools",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "publisher": "matanelcohen",
   "license": "MIT",
   "icon": "media/logo2.png",
@@ -32,6 +32,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onCommand:fe-ninja-tools.showPipelines",
     "onView:build-compare-view"
   ],
@@ -40,13 +41,15 @@
     "commands": [
       {
         "command": "fe-ninja-tools.showPipelines",
-        "title": "Compare Builds",
+        "title": "Open Comparison Workspace",
         "category": "Build Compare Tools",
         "icon": "$(compare-changes)"
       },
       {
-        "command": "tools.navigate",
-        "title": "Navigate Build Compare Tools View"
+        "command": "fe-ninja-tools.refresh",
+        "title": "Refresh",
+        "category": "Build Compare Tools",
+        "icon": "$(refresh)"
       },
       {
         "command": "fe-ninja-tools.openSettings",
@@ -97,12 +100,18 @@
       "build-compare-tools": [
         {
           "id": "build-compare-view",
-          "name": "Build Compare Tools",
-          "type": "webview",
+          "name": "Release Dashboard",
           "when": "true"
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "build-compare-view",
+        "contents": "Connect Azure DevOps to compare releases, assess deployment risk, and share results with Teams.\n[Start guided setup](command:fe-ninja-tools.setupProfile)",
+        "when": "!buildCompareTools.hasProfile"
+      }
+    ],
     "menus": {
       "commandPalette": [
         {
@@ -115,6 +124,28 @@
           "command": "fe-ninja-tools.showPipelines",
           "when": "true",
           "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "fe-ninja-tools.showPipelines",
+          "when": "view == build-compare-view && buildCompareTools.hasProfile",
+          "group": "navigation@1"
+        },
+        {
+          "command": "fe-ninja-tools.refresh",
+          "when": "view == build-compare-view && buildCompareTools.hasProfile",
+          "group": "navigation@2"
+        },
+        {
+          "command": "fe-ninja-tools.setupProfile",
+          "when": "view == build-compare-view",
+          "group": "navigation@3"
+        },
+        {
+          "command": "fe-ninja-tools.openSettings",
+          "when": "view == build-compare-view",
+          "group": "navigation@4"
         }
       ]
     },

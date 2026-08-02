@@ -76,69 +76,25 @@ npm run package
 # Install the generated .vsix file in VS Code
 ```
 
-## Configuration Setup
+## Guided setup
 
-After installation, you need to configure the extension with your Azure DevOps details.
+1. Click the **Build Compare Tools** icon in the Activity Bar.
+2. Select **Start guided setup** in the Release Dashboard.
+3. Sign in through VS Code's Microsoft authentication prompt.
+4. Choose the Azure DevOps organization, project, repository, pipeline, and
+   deployment stage.
+5. Name the profile and optionally configure path filters.
 
-### Step 1: Open Settings
+The extension stores profile configuration in VS Code global storage. Microsoft
+access tokens stay in the extension host, and Teams Workflow URLs are stored in
+SecretStorage. Existing `buildCompareTools.*` settings are imported once as a
+legacy profile.
 
-1. **Via Command Palette**
-   - Press `Ctrl+Shift+P` / `Cmd+Shift+P`
-   - Type "Preferences: Open Settings (JSON)"
-   - Press Enter
+## Azure DevOps authentication
 
-2. **Via Settings UI**
-   - Go to File → Preferences → Settings
-   - Search for "Build Compare Tools"
-
-   ![Settings UI](./docs/images/settings-ui.png)
-
-### Step 2: Add Configuration
-
-Add the following configuration to your VS Code settings:
-
-```json
-{
-  "buildCompareTools.organizationUrl": "https://dev.azure.com/yourorganization",
-  "buildCompareTools.projectName": "YourProjectName",
-  "buildCompareTools.pipelineDefinitionId": 123,
-  "buildCompareTools.targetStageName": "Deploy to Production",
-  "buildCompareTools.repositoryId": "your-repository-id",
-  "buildCompareTools.relevantPathFilter": "src/,tests/"
-}
-```
-
-## Azure DevOps Authentication
-
-### Creating a Personal Access Token (PAT)
-
-1. **Access Azure DevOps**
-   - Go to your Azure DevOps organization
-   - Example: `https://dev.azure.com/yourorganization`
-
-2. **Open User Settings**
-   - Click your profile picture (top right)
-   - Select "Personal access tokens"
-
-   ![User Settings](./docs/images/user-settings.png)
-
-3. **Create New Token**
-   - Click "New Token"
-   - Set the following permissions:
-     - **Build**: Read
-     - **Code**: Read
-     - **Pull Requests**: Read (if using PR features)
-
-   ![Create PAT](./docs/images/create-pat.png)
-
-4. **Configure in VS Code**
-   - The extension will prompt for your PAT when first used
-   - Or set it in VS Code settings:
-   ```json
-   {
-     "buildCompareTools.accessToken": "your-personal-access-token"
-   }
-   ```
+Build Compare Tools uses VS Code's Microsoft authentication provider. A
+Personal Access Token is not required and must not be added to extension
+settings.
 
 ## Finding Required Configuration Values
 

@@ -1,98 +1,31 @@
 # Changelog
 
-## Unreleased
+All notable changes to Build Compare Tools are documented here.
+
+## [2.0.0] - 2026-08-02
+
+### Added
+
+- Native VS Code release dashboard, status bar integration, and contextual actions.
+- Guided Azure DevOps onboarding with named pipeline and environment profiles.
+- Accurate build, branch, tag, and environment drift comparisons.
+- Pull request, direct commit, contributor, and changed-file analysis.
+- Deployment risk scoring and optional Copilot-generated release summaries.
+- Teams Workflow Adaptive Cards with optional user mentions.
+- Recent comparison history, Markdown and JSON exports, and Azure DevOps work-item creation.
+- Opt-in scheduled Teams notifications while VS Code is running.
+- Tabbed comparison workspace with persisted navigation state.
+- Deterministic tests and opt-in live Azure DevOps and Teams smoke tests.
+
+### Changed
 
 - Replaced date-based commit lookup with build-to-build Git ancestry comparison.
-- Added typed pull request, direct commit, contributor, and changed-file results.
-- Added summary metrics, result search, refresh, empty states, and keyboard-accessible build selection.
-- Added Microsoft Teams Workflow Adaptive Card delivery with optional contributor mentions.
-- Added guided Azure DevOps discovery for projects, repositories, pipelines, and deployment stages.
-- Added named pipeline profiles with switching, deletion, and one-time migration from legacy settings.
-- Added arbitrary build, branch, tag, and compatible environment drift comparisons.
-- Added release-risk scoring and explicit Copilot-generated summaries.
-- Added recent comparison history, Markdown/JSON exports, and ADO work-item creation.
-- Added editable profiles and opt-in scheduled Teams notifications while VS Code is running.
-- Added deterministic coverage plus an explicit opt-in live ADO/Teams smoke-test harness.
-- Stored Teams webhook URLs in VS Code SecretStorage and kept Azure access tokens out of the webview.
-- Added bounded Azure DevOps API concurrency, explicit errors, strict CI linting, and automated tests.
+- Moved Microsoft access tokens and Teams webhook URLs out of the webview; webhook URLs now use VS Code SecretStorage.
+- Added bounded Azure DevOps API concurrency, strict CI validation, and race-safe profile requests.
+- Modernized GitHub releases to validate version tags and publish a tested VSIX asset.
 
-All notable changes to the "Build Compare Tools" extension will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
+## [0.1.0] - 2024
 
 ### Added
-- Comprehensive installation guide (INSTALL.md)
-- Automated GitHub release workflow
-- Release script for version management
-- Extension icon configuration (media/logo.png)
 
-### Changed
-- Improved PR link generation to use configuration instead of hardcoded values
-- Updated CI workflow to use Node.js 20
-- Enhanced error handling and debugging capabilities
-- Made `relevantPathFilter` configuration optional
-- Simplified user experience: clicking extension now directly opens React app
-
-### Removed
-- Code Review functionality (focusing on Build Comparison only)
-- Unused dependencies and imports
-- WebView provider for activity bar (simplified to direct command execution)
-
-### Fixed
-- Lint errors and TypeScript warnings
-- VSCE packaging issues in CI
-- Program crash when `relevantPathFilter` is not configured
-
-## [0.1.0] - 2024-XX-XX
-
-### Added
-- Initial release of Build Compare Tools
-- Azure DevOps pipeline build comparison
-- Activity bar integration
-- Build analysis and commit tracking
-- Configurable path filtering
-- VS Code webview interface
-
-### Features
-- Compare builds between different pipeline runs
-- Analyze commit changes and author contributions
-- Filter relevant file changes by path patterns
-- Integration with Azure DevOps APIs
-- Personal Access Token authentication
-- Optimized performance with webpack and tree-shaking
-
----
-
-## How to Contribute to Changelog
-
-When making changes, please update this file following these guidelines:
-
-### Categories
-- **Added** for new features
-- **Changed** for changes in existing functionality
-- **Deprecated** for soon-to-be removed features
-- **Removed** for now removed features
-- **Fixed** for any bug fixes
-- **Security** in case of vulnerabilities
-
-### Format
-```markdown
-## [Version] - YYYY-MM-DD
-
-### Added
-- New feature description
-
-### Changed
-- Changed feature description
-
-### Fixed
-- Bug fix description
-```
-
-### Version Numbers
-- **Major** (X.0.0): Breaking changes
-- **Minor** (0.X.0): New features, backwards compatible
-- **Patch** (0.0.X): Bug fixes, backwards compatible
+- Initial Azure DevOps pipeline build comparison and path filtering.

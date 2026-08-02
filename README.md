@@ -77,8 +77,8 @@ Existing `buildCompareTools.*` VS Code settings are migrated once into a
 ## Usage
 
 1. **Open the Extension**:
-   - Use the Command Palette (`Ctrl+Shift+P`) and run "Compare Builds"
-   - Or click the Build Compare Tools icon in the Activity Bar
+   - Click the Build Compare Tools icon to use the native Release Dashboard
+   - Or run **Build Compare Tools: Open Comparison Workspace**
 
 2. **View Latest Deployment**: The extension automatically shows the latest successful deployment
 
@@ -88,6 +88,8 @@ Existing `buildCompareTools.*` VS Code settings are migrated once into a
 
 4. **Analyze Results**:
    - Review summary metrics, pull requests, direct commits, and changed files
+   - Move between the persisted **Compare**, **Changes**, **Share & export**,
+     and **History** tabs
    - Filter results by PR, contributor, message, or file path
    - Click on pull request links to view details in Azure DevOps
    - Copy results to clipboard for sharing
