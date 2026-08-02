@@ -2,6 +2,13 @@
 
 All notable changes to Build Compare Tools are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- Render configured path filters as native badges instead of literal Markdown
+  backticks.
+
 ## [2.0.2] - 2026-08-02
 
 ### Fixed

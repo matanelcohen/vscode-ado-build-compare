@@ -91,6 +91,12 @@ const useStyles = makeStyles({
     alignItems: "center",
     gap: tokens.spacingHorizontalS,
   },
+  filters: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: tokens.spacingHorizontalXS,
+  },
 });
 
 export const CommitComparisonResults: React.FC<
@@ -156,9 +162,14 @@ export const CommitComparisonResults: React.FC<
       </div>
 
       {result.pathFilters.length > 0 && (
-        <Caption1>
-          Filtered to: {result.pathFilters.map((path) => `\`${path}\``).join(", ")}
-        </Caption1>
+        <div className={styles.filters}>
+          <Caption1>Filtered to:</Caption1>
+          {result.pathFilters.map((path) => (
+            <Badge appearance="outline" key={path}>
+              {path}
+            </Badge>
+          ))}
+        </div>
       )}
 
       {result.commits.length > 0 ? (
