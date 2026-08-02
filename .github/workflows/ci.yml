@@ -42,7 +42,7 @@ jobs:
       run: npm run package
 
     - name: Upload Extension Package
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       with:
         name: vscode-extension-${{ github.sha }}
         path: '*.vsix'
