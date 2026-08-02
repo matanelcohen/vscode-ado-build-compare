@@ -7,7 +7,6 @@ import {
   GitCommitRef,
   GitPullRequest,
   GitPullRequestQueryType,
-  GitVersionType,
   VersionControlChangeType,
 } from "azure-devops-node-api/interfaces/GitInterfaces";
 import { Operation } from "azure-devops-node-api/interfaces/common/VSSInterfaces";
@@ -23,6 +22,7 @@ import {
 } from "../models/comparison";
 import {
   isPathRelevant,
+  buildCommitRangeCriteria,
   mapWithConcurrency,
   parsePathFilters,
   uniqueFiles,
@@ -234,20 +234,14 @@ export class AdoService {
 
     const gitApiClient = await this.gitApi;
     const commits = await gitApiClient.getCommitsBatch(
-      {
-        itemVersion: {
-          version: selectedBuild.sourceVersion,
-          versionType: GitVersionType.Commit,
-        },
-        compareVersion: {
-          version: olderRun.sourceVersion,
-          versionType: GitVersionType.Commit,
-        },
-        includeLinks: true,
-        $top: 10000,
-      },
+      buildCommitRangeCriteria(
+        olderRun.sourceVersion,
+        selectedBuild.sourceVersion
+      ),
       this.config.repositoryId,
-      this.config.projectName
+      this.config.projectName,
+      undefined,
+      10000
     );
 
     if (commits.length >= 10000) {

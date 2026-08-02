@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildCommitRangeCriteria,
   isPathRelevant,
   mapWithConcurrency,
   normalizePath,
@@ -8,6 +9,12 @@ import {
   uniqueFiles,
   uniqueIdentities,
 } from "../src/utils/comparison";
+
+test("queries commits introduced between the base and target versions", () => {
+  const criteria = buildCommitRangeCriteria("base-sha", "target-sha");
+  assert.equal(criteria.itemVersion?.version, "base-sha");
+  assert.equal(criteria.compareVersion?.version, "target-sha");
+});
 
 test("normalizes comma-separated path filters", () => {
   assert.deepEqual(parsePathFilters(" src/app/, /infra\\pipelines, ,/"), [
@@ -22,6 +29,7 @@ test("matches path boundaries instead of partial folder names", () => {
   const filters = ["/src/app"];
   assert.equal(isPathRelevant("/src/app/index.ts", filters), true);
   assert.equal(isPathRelevant("/src/app", filters), true);
+  assert.equal(isPathRelevant("/packages/gaia/app.ts", ["/gaia"]), true);
   assert.equal(isPathRelevant("/src/application/index.ts", filters), false);
   assert.equal(isPathRelevant("/any/path", []), true);
   assert.equal(isPathRelevant("/any/path", ["/"]), true);

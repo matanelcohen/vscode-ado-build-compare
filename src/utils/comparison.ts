@@ -1,4 +1,23 @@
 import { ComparedFile, ComparisonIdentity } from "../models/comparison";
+import { GitVersionType } from "azure-devops-node-api/interfaces/GitInterfaces";
+import type { GitQueryCommitsCriteria } from "azure-devops-node-api/interfaces/GitInterfaces";
+
+export function buildCommitRangeCriteria(
+  baseCommit: string,
+  targetCommit: string
+): GitQueryCommitsCriteria {
+  return {
+    itemVersion: {
+      version: baseCommit,
+      versionType: GitVersionType.Commit,
+    },
+    compareVersion: {
+      version: targetCommit,
+      versionType: GitVersionType.Commit,
+    },
+    includeLinks: true,
+  };
+}
 
 export function parsePathFilters(value?: string): string[] {
   return (value ?? "")
@@ -25,12 +44,19 @@ export function isPathRelevant(path: string, filters: string[]): boolean {
   }
 
   const normalizedPath = normalizePath(path);
-  return filters.some(
-    (filter) =>
-      filter === "/" ||
-      normalizedPath === filter ||
-      normalizedPath.startsWith(`${filter}/`)
-  );
+  const pathSegments = normalizedPath.split("/").filter(Boolean);
+  return filters.some((filter) => {
+    if (filter === "/") {
+      return true;
+    }
+    const filterSegments = filter.split("/").filter(Boolean);
+    return pathSegments.some((_segment, start) =>
+      filterSegments.every(
+        (filterSegment, offset) =>
+          pathSegments[start + offset] === filterSegment
+      )
+    );
+  });
 }
 
 export function uniqueFiles(files: ComparedFile[]): ComparedFile[] {

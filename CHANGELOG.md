@@ -8,6 +8,10 @@ All notable changes to Build Compare Tools are documented here.
 
 - Render configured path filters as native badges instead of literal Markdown
   backticks.
+- Correct Azure DevOps commit-range direction so newer builds return their
+  introduced commits.
+- Match single-folder filters such as `/gaia` at path-segment boundaries,
+  including nested workspaces such as `/packages/gaia`.
 
 ## [2.0.2] - 2026-08-02
 
