@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  buildCommitRangeCriteria,
   isPathRelevant,
   mapWithConcurrency,
   normalizePath,
   parsePathFilters,
+  summarizeFileHotspots,
   uniqueFiles,
   uniqueIdentities,
 } from "../src/utils/comparison";
+import { buildCommitRangeCriteria } from "../src/utils/adoComparison";
 
 test("queries commits introduced between the base and target versions", () => {
   const criteria = buildCommitRangeCriteria("base-sha", "target-sha");
@@ -54,6 +55,20 @@ test("deduplicates files and identities deterministically", () => {
       { displayName: "A duplicate", email: "a@example.com" },
     ]).map((identity) => identity.displayName),
     ["A", "B"]
+  );
+});
+
+test("summarizes the busiest changed areas", () => {
+  assert.deepEqual(
+    summarizeFileHotspots([
+      { path: "/packages/gaia/a.ts", changeType: "Edit" },
+      { path: "/packages/gaia/b.ts", changeType: "Add" },
+      { path: "/infra/main.bicep", changeType: "Edit" },
+    ]),
+    [
+      { path: "/packages/gaia", count: 2 },
+      { path: "/infra/main.bicep", count: 1 },
+    ]
   );
 });
 

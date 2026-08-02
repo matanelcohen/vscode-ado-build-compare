@@ -37,6 +37,10 @@ const useStyles = makeStyles({
   root: {
     ...shorthands.padding("24px"),
     minWidth: "350px",
+    width: "100%",
+    maxWidth: "1600px",
+    margin: "0 auto",
+    boxSizing: "border-box",
     color: "var(--vscode-foreground)",
     backgroundColor: "var(--vscode-editor-background)",
     display: "flex",

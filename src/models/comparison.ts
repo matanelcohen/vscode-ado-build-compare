@@ -40,6 +40,13 @@ export interface ComparisonResult {
   pathFilters: string[];
   warnings: string[];
   risk: ReleaseRisk;
+  analysis?: {
+    totalCommits: number;
+    excludedCommits: number;
+    inspectionFailures?: number;
+    inspectedFiles: number;
+    durationMs: number;
+  };
 }
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";

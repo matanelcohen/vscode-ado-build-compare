@@ -1,23 +1,4 @@
 import { ComparedFile, ComparisonIdentity } from "../models/comparison";
-import { GitVersionType } from "azure-devops-node-api/interfaces/GitInterfaces";
-import type { GitQueryCommitsCriteria } from "azure-devops-node-api/interfaces/GitInterfaces";
-
-export function buildCommitRangeCriteria(
-  baseCommit: string,
-  targetCommit: string
-): GitQueryCommitsCriteria {
-  return {
-    itemVersion: {
-      version: baseCommit,
-      versionType: GitVersionType.Commit,
-    },
-    compareVersion: {
-      version: targetCommit,
-      versionType: GitVersionType.Commit,
-    },
-    includeLinks: true,
-  };
-}
 
 export function parsePathFilters(value?: string): string[] {
   return (value ?? "")
@@ -71,10 +52,32 @@ export function uniqueFiles(files: ComparedFile[]): ComparedFile[] {
         changeType: `${existing.changeType}, ${file.changeType}`,
       });
     }
+
   }
   return [...byPath.values()].sort((left, right) =>
     left.path.localeCompare(right.path)
   );
+}
+
+export function summarizeFileHotspots(
+  files: ComparedFile[],
+  limit = 5
+): Array<{ path: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const file of files) {
+    const segments = normalizePath(file.path).split("/").filter(Boolean);
+    const hotspot = `/${segments
+      .slice(0, Math.min(2, segments.length))
+      .join("/")}`;
+    counts.set(hotspot, (counts.get(hotspot) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([path, count]) => ({ path, count }))
+    .sort(
+      (left, right) =>
+        right.count - left.count || left.path.localeCompare(right.path)
+    )
+    .slice(0, Math.max(0, limit));
 }
 
 export function uniqueIdentities(

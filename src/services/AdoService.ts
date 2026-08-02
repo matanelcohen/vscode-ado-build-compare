@@ -5,6 +5,7 @@ import { IWorkItemTrackingApi } from "azure-devops-node-api/WorkItemTrackingApi"
 import { Build, BuildStatus } from "azure-devops-node-api/interfaces/BuildInterfaces";
 import {
   GitCommitRef,
+  GitCommitChanges,
   GitPullRequest,
   GitPullRequestQueryType,
   VersionControlChangeType,
@@ -22,15 +23,20 @@ import {
 } from "../models/comparison";
 import {
   isPathRelevant,
-  buildCommitRangeCriteria,
   mapWithConcurrency,
   parsePathFilters,
   uniqueFiles,
   uniqueIdentities,
 } from "../utils/comparison";
+import { buildCommitRangeCriteria } from "../utils/adoComparison";
+import { PromiseLruCache } from "../utils/promiseLruCache";
 import { analyzeReleaseRisk } from "../utils/riskAnalysis";
 
 export class AdoService {
+  private static readonly commitChangesCache = new PromiseLruCache<
+    string,
+    GitCommitChanges
+  >(500);
   private connection: azdev.WebApi;
   private buildApi: Promise<IBuildApi>;
   private gitApi: Promise<IGitApi>;
@@ -214,6 +220,7 @@ export class AdoService {
     olderRun: PipelineRun,
     selectedBuild: PipelineRun
   ): Promise<ComparisonResult> {
+    const startedAt = Date.now();
     if (!olderRun.sourceVersion || !selectedBuild.sourceVersion) {
       throw new Error("Both builds must have a source commit.");
     }
@@ -229,7 +236,17 @@ export class AdoService {
         pathFilters: parsePathFilters(this.config.relevantPathFilter),
         warnings: [],
       };
-      return { ...empty, risk: analyzeReleaseRisk(empty) };
+      return {
+        ...empty,
+        risk: analyzeReleaseRisk(empty),
+        analysis: {
+          totalCommits: 0,
+          excludedCommits: 0,
+          inspectionFailures: 0,
+          inspectedFiles: 0,
+          durationMs: Date.now() - startedAt,
+        },
+      };
     }
 
     const gitApiClient = await this.gitApi;
@@ -251,22 +268,24 @@ export class AdoService {
     }
 
     const pathFilters = parsePathFilters(this.config.relevantPathFilter);
-    const pullRequests = await this.findPullRequestsForCommits(commits);
     const warnings: string[] = [];
+    let inspectedFiles = 0;
+    let excludedCommits = 0;
+    let inspectionFailures = 0;
 
-    const compared = await mapWithConcurrency(commits, 8, async (commit) => {
+    const comparedPromise = mapWithConcurrency(commits, 8, async (commit) => {
       const commitId = commit.commitId;
       if (!commitId) {
+        inspectionFailures += 1;
+        warnings.push(
+          "Azure DevOps returned a commit without an ID; it was skipped."
+        );
         return null;
       }
 
       try {
-        const changes = await gitApiClient.getChanges(
-          commitId,
-          this.config.repositoryId,
-          this.config.projectName,
-          10000
-        );
+        const changes = await this.getCommitChanges(gitApiClient, commitId);
+        inspectedFiles += changes.changes?.length ?? 0;
         if ((changes.changes?.length ?? 0) >= 10000) {
           warnings.push(
             `Commit ${commitId.slice(0, 7)} contains at least 10,000 file changes; its file list was truncated.`
@@ -288,10 +307,10 @@ export class AdoService {
           .filter((file) => isPathRelevant(file.path, pathFilters));
 
         if (pathFilters.length > 0 && files.length === 0) {
+          excludedCommits += 1;
           return null;
         }
 
-        const pullRequest = pullRequests.get(commitId);
         const author = this.gitIdentity(
           commit.author?.name,
           commit.author?.email
@@ -304,20 +323,27 @@ export class AdoService {
           ...(commit.author?.date
             ? { committedAt: commit.author.date.toISOString() }
             : {}),
-          ...(pullRequest ? { pullRequest } : {}),
         };
         return result;
       } catch (error) {
+        inspectionFailures += 1;
         warnings.push(
           `Could not inspect files for commit ${commitId.slice(0, 7)}: ${this.errorMessage(error)}`
         );
         return null;
       }
     });
+    const [compared, pullRequests] = await Promise.all([
+      comparedPromise,
+      this.findPullRequestsForCommits(commits),
+    ]);
 
     const relevantCommits = compared.filter(
       (commit): commit is ComparedCommit => commit !== null
-    );
+    ).map((commit) => {
+      const pullRequest = pullRequests.get(commit.id);
+      return pullRequest ? { ...commit, pullRequest } : commit;
+    });
     const uniquePullRequests = new Map<number, ComparedPullRequest>();
     for (const commit of relevantCommits) {
       if (commit.pullRequest) {
@@ -339,11 +365,40 @@ export class AdoService {
       files: uniqueFiles(relevantCommits.flatMap((commit) => commit.files)),
       pathFilters,
       warnings,
+      analysis: {
+        totalCommits: commits.length,
+        excludedCommits,
+        inspectionFailures,
+        inspectedFiles,
+        durationMs: Date.now() - startedAt,
+      },
     };
     return {
       ...resultWithoutRisk,
       risk: analyzeReleaseRisk(resultWithoutRisk),
     };
+  }
+
+  private getCommitChanges(
+    gitApiClient: IGitApi,
+    commitId: string
+  ): Promise<GitCommitChanges> {
+    const key = [
+      this.config.organizationUrl,
+      this.config.projectName,
+      this.config.repositoryId,
+      commitId,
+    ].join("|");
+    return AdoService.commitChangesCache.getOrCreate(
+      key,
+      () =>
+        gitApiClient.getChanges(
+          commitId,
+          this.config.repositoryId,
+          this.config.projectName,
+          10000
+        )
+    );
   }
 
   private async findPullRequestsForCommits(

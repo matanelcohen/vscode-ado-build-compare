@@ -2,6 +2,21 @@
 
 All notable changes to Build Compare Tools are documented here.
 
+## [2.1.0] - 2026-08-02
+
+### Added
+
+- Comparison diagnostics showing analyzed commits, inspected files, duration,
+  filter exclusions, and inspection failures.
+- Change-hotspot summaries plus All, Pull requests, and Direct commit filters.
+- Incremental rendering for large result sets with a 50-item page size.
+
+### Changed
+
+- Run pull-request and file analysis concurrently.
+- Cache up to 500 commit-change responses across overlapping comparisons.
+- Constrain the report to a responsive readable width on large displays.
+
 ## [2.0.3] - 2026-08-02
 
 ### Fixed

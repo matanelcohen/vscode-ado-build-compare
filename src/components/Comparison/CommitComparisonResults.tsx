@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   Badge,
   Body1,
+  Button,
   Caption1,
   Card,
   Divider,
@@ -15,6 +16,7 @@ import {
 } from "@fluentui/react-components";
 import { SearchRegular } from "@fluentui/react-icons";
 import { ComparisonResult } from "../../models/comparison";
+import { summarizeFileHotspots } from "../../utils/comparison";
 
 interface CommitComparisonResultsProps {
   result: ComparisonResult;
@@ -97,6 +99,37 @@ const useStyles = makeStyles({
     flexWrap: "wrap",
     gap: tokens.spacingHorizontalXS,
   },
+  analysis: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: tokens.spacingHorizontalS,
+    color: tokens.colorNeutralForeground3,
+  },
+  resultToolbar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: tokens.spacingHorizontalS,
+  },
+  resultFilters: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: tokens.spacingHorizontalXS,
+  },
+  hotspots: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: tokens.spacingHorizontalXS,
+  },
+  listFooter: {
+    display: "flex",
+    justifyContent: "center",
+    paddingTop: tokens.spacingVerticalS,
+  },
 });
 
 export const CommitComparisonResults: React.FC<
@@ -104,19 +137,48 @@ export const CommitComparisonResults: React.FC<
 > = ({ result }) => {
   const styles = useStyles();
   const [query, setQuery] = React.useState("");
+  const [commitKind, setCommitKind] = React.useState<
+    "all" | "pull-request" | "direct"
+  >("all");
+  const [visibleLimit, setVisibleLimit] = React.useState(50);
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const visibleCommits = result.commits.filter((commit) => {
-    if (!normalizedQuery) {
-      return true;
-    }
-    return [
-      commit.message,
-      commit.author.displayName,
-      commit.pullRequest?.title,
-      commit.pullRequest?.id.toString(),
-      ...commit.files.map((file) => file.path),
-    ].some((value) => value?.toLocaleLowerCase().includes(normalizedQuery));
-  });
+  const filteredCommits = React.useMemo(
+    () =>
+      result.commits.filter((commit) => {
+        if (commitKind === "pull-request" && !commit.pullRequest) {
+          return false;
+        }
+        if (commitKind === "direct" && commit.pullRequest) {
+          return false;
+        }
+        if (!normalizedQuery) {
+          return true;
+        }
+        return [
+          commit.message,
+          commit.author.displayName,
+          commit.pullRequest?.title,
+          commit.pullRequest?.id.toString(),
+          ...commit.files.map((file) => file.path),
+        ].some((value) =>
+          value?.toLocaleLowerCase().includes(normalizedQuery)
+        );
+      }),
+    [commitKind, normalizedQuery, result.commits]
+  );
+  const visibleCommits = filteredCommits.slice(0, visibleLimit);
+  const directCommitCount = React.useMemo(
+    () => result.commits.filter((commit) => !commit.pullRequest).length,
+    [result.commits]
+  );
+  const hotspots = React.useMemo(
+    () => summarizeFileHotspots(result.files),
+    [result.files]
+  );
+
+  React.useEffect(() => {
+    setVisibleLimit(50);
+  }, [commitKind, normalizedQuery, result]);
 
   return (
     <Card className={styles.card}>
@@ -134,6 +196,25 @@ export const CommitComparisonResults: React.FC<
           </div>
         ))}
       </div>
+      {result.analysis && (
+        <div className={styles.analysis}>
+          <Caption1>
+            Analyzed {result.analysis.totalCommits} commits and{" "}
+            {result.analysis.inspectedFiles} file changes in{" "}
+            {(result.analysis.durationMs / 1000).toFixed(1)}s
+          </Caption1>
+          {result.analysis.excludedCommits > 0 && (
+            <Badge appearance="tint">
+              {result.analysis.excludedCommits} excluded by filters
+            </Badge>
+          )}
+          {(result.analysis.inspectionFailures ?? 0) > 0 && (
+            <Badge appearance="tint" color="warning">
+              {result.analysis.inspectionFailures} inspection failures
+            </Badge>
+          )}
+        </div>
+      )}
       <div className={styles.risk}>
         <div className={styles.riskHeader}>
           <Text weight="semibold">Release risk</Text>
@@ -171,6 +252,16 @@ export const CommitComparisonResults: React.FC<
           ))}
         </div>
       )}
+      {hotspots.length > 0 && (
+        <div className={styles.hotspots}>
+          <Caption1>Change hotspots:</Caption1>
+          {hotspots.map((hotspot) => (
+            <Badge appearance="tint" key={hotspot.path}>
+              {hotspot.path} · {hotspot.count}
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {result.commits.length > 0 ? (
         <>
@@ -181,6 +272,37 @@ export const CommitComparisonResults: React.FC<
             placeholder="Filter by PR, contributor, message, or file"
             aria-label="Filter comparison results"
           />
+          <div className={styles.resultToolbar}>
+            <div className={styles.resultFilters}>
+              <Button
+                size="small"
+                appearance={commitKind === "all" ? "primary" : "secondary"}
+                onClick={() => setCommitKind("all")}
+              >
+                All · {result.commits.length}
+              </Button>
+              <Button
+                size="small"
+                appearance={
+                  commitKind === "pull-request" ? "primary" : "secondary"
+                }
+                onClick={() => setCommitKind("pull-request")}
+              >
+                Pull requests · {result.commits.length - directCommitCount}
+              </Button>
+              <Button
+                size="small"
+                appearance={commitKind === "direct" ? "primary" : "secondary"}
+                onClick={() => setCommitKind("direct")}
+              >
+                Direct · {directCommitCount}
+              </Button>
+            </div>
+            <Caption1>
+              Showing {Math.min(visibleLimit, filteredCommits.length)} of{" "}
+              {filteredCommits.length}
+            </Caption1>
+          </div>
           <div className={styles.list}>
             {visibleCommits.map((commit, index) => (
               <React.Fragment key={commit.id}>
@@ -223,6 +345,16 @@ export const CommitComparisonResults: React.FC<
             ))}
             {visibleCommits.length === 0 && (
               <div className={styles.empty}>No changes match this filter.</div>
+            )}
+            {visibleCommits.length < filteredCommits.length && (
+              <div className={styles.listFooter}>
+                <Button
+                  appearance="secondary"
+                  onClick={() => setVisibleLimit((value) => value + 50)}
+                >
+                  Show 50 more
+                </Button>
+              </div>
             )}
           </div>
         </>
