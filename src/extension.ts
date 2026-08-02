@@ -8,10 +8,10 @@ import { buildTeamsWorkflowPayload } from "./teams/adaptiveCard";
 import { ProfileStore } from "./services/ProfileStore";
 import {
   deletePipelineProfile,
-  editPipelineProfile,
   pickActiveProfile,
-  runSmartOnboarding,
 } from "./services/OnboardingService";
+import { openSetupPanel, SetupPanelOptions } from "./services/SetupPanel";
+import { getWebviewContent } from "./services/webviewHtml";
 import { ComparisonHistoryStore } from "./services/ComparisonHistoryStore";
 import {
   ExportFormat,
@@ -209,6 +209,11 @@ export function activate(context: vscode.ExtensionContext) {
     }
     dashboardProvider.refresh();
   };
+  const openSetup = (options: SetupPanelOptions = {}) =>
+    openSetupPanel(context, profileStore, options, async () => {
+      currentPanel?.webview.postMessage({ command: "profilesChanged" });
+      await refreshChrome();
+    });
   void refreshChrome();
   void profileInitialization.then(async () => {
     if (
@@ -335,10 +340,8 @@ export function activate(context: vscode.ExtensionContext) {
       "fe-ninja-tools.setupProfile",
       async () => {
         await profileInitialization;
-        const profile = await runSmartOnboarding(profileStore);
+        const profile = await openSetup({ mode: "create" });
         if (profile) {
-          currentPanel?.webview.postMessage({ command: "profilesChanged" });
-          await refreshChrome();
           vscode.window.showInformationMessage(
             `Pipeline profile "${profile.name}" is ready.`
           );
@@ -349,7 +352,9 @@ export function activate(context: vscode.ExtensionContext) {
       "fe-ninja-tools.switchProfile",
       async () => {
         await profileInitialization;
-        const profile = await pickActiveProfile(profileStore);
+        const profile = await pickActiveProfile(profileStore, () =>
+          openSetup({ mode: "create" })
+        );
         if (profile) {
           currentPanel?.webview.postMessage({ command: "profilesChanged" });
           await refreshChrome();
@@ -380,11 +385,7 @@ export function activate(context: vscode.ExtensionContext) {
       "fe-ninja-tools.editProfile",
       async () => {
         await profileInitialization;
-        const profile = await editPipelineProfile(profileStore);
-        if (profile) {
-          currentPanel?.webview.postMessage({ command: "profilesChanged" });
-          await refreshChrome();
-        }
+        await openSetup({ mode: "edit" });
       }
     )
   );
@@ -658,7 +659,7 @@ export function activate(context: vscode.ExtensionContext) {
             case "runSmartOnboarding": {
                 try {
                   await profileInitialization;
-                  await runSmartOnboarding(profileStore);
+                  await openSetup({ mode: "create" });
                   currentPanel?.webview.postMessage({
                     command: "runSmartOnboardingResponse",
                     requestId: message.requestId,
@@ -677,7 +678,9 @@ export function activate(context: vscode.ExtensionContext) {
             case "switchPipelineProfile": {
                 try {
                   await profileInitialization;
-                  await pickActiveProfile(profileStore);
+                  await pickActiveProfile(profileStore, () =>
+                    openSetup({ mode: "create" })
+                  );
                   currentPanel?.webview.postMessage({
                     command: "switchPipelineProfileResponse",
                     requestId: message.requestId,
@@ -730,7 +733,12 @@ export function activate(context: vscode.ExtensionContext) {
             case "editPipelineProfile": {
               try {
                 await profileInitialization;
-                await editPipelineProfile(profileStore);
+                await openSetup({
+                  mode: "edit",
+                  ...(message.profileId
+                    ? { profileId: message.profileId as string }
+                    : {}),
+                });
                 currentPanel?.webview.postMessage({
                   command: "editPipelineProfileResponse",
                   requestId: message.requestId,
@@ -1199,30 +1207,6 @@ export function activate(context: vscode.ExtensionContext) {
       }
     )
   );
-}
-
-function getWebviewContent(
-  webview: vscode.Webview,
-  extensionUri: vscode.Uri
-): string {
-  const scriptPathOnDisk = vscode.Uri.joinPath(
-    extensionUri,
-    "out",
-    "webview.js"
-  );
-  const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
-  const nonce = getNonce();
-  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n              <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;">\n              <title>ReleaseLens</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
-}
-
-function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }
 
 export function deactivate() {

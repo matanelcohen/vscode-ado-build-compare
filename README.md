@@ -60,14 +60,20 @@ or stored.
 
 ## Guided setup
 
-The onboarding flow discovers:
+**Connect Azure DevOps** and **Edit Pipeline Profile** open an interactive
+setup page inside VS Code instead of a chain of input prompts. The page
+discovers, step by step:
 
 1. Azure DevOps organization
 2. Project
 3. Repository
 4. Pipeline
 5. Deployment stage
-6. Optional relevant paths
+6. Optional relevant paths and automatic Teams updates
+
+Every field stays editable, so you can revisit an earlier step without
+restarting. The same page lists saved profiles, so you can edit, activate, or
+delete any existing configuration.
 
 Save multiple profiles for services and environments, then switch between them
 from the native Release Dashboard. Existing `buildCompareTools.*` settings are

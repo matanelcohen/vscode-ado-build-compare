@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ComparisonPage } from "./pages/ComparisonPage";
+import { SetupPage } from "./pages/SetupPage";
 import {
   FluentProvider,
   webLightTheme,
@@ -11,6 +12,7 @@ import { useVSCodeTheme } from "./hooks/useVSCodeTheme";
 
 interface AppProps {
   vscode: any;
+  view?: "comparison" | "setup";
 }
 
 const vscodeThemeToFluentTheme: Record<string, Theme> = {
@@ -19,7 +21,7 @@ const vscodeThemeToFluentTheme: Record<string, Theme> = {
   'vscode-high-contrast': teamsHighContrastTheme,
 };
 
-export const App: React.FC<AppProps> = ({ vscode }) => {
+export const App: React.FC<AppProps> = ({ vscode, view = "comparison" }) => {
   const vscodeTheme = useVSCodeTheme(vscode);
 
   const fluentTheme = vscodeThemeToFluentTheme[vscodeTheme] || webDarkTheme;
@@ -37,7 +39,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
       theme={fluentTheme}
       style={{ height: "100vh", display: "flex", flexDirection: "column" }}
     >
-      <ComparisonPage vscode={vscode} />
+      {view === "setup" ? <SetupPage /> : <ComparisonPage vscode={vscode} />}
     </FluentProvider>
   );
 };
