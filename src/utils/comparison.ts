@@ -40,6 +40,16 @@ export function isPathRelevant(path: string, filters: string[]): boolean {
   });
 }
 
+export function isPathWithinScope(path: string, scope: string): boolean {
+  const normalizedPath = normalizePath(path).toLocaleLowerCase();
+  const normalizedScope = normalizePath(scope).toLocaleLowerCase();
+  return (
+    normalizedScope === "/" ||
+    normalizedPath === normalizedScope ||
+    normalizedPath.startsWith(`${normalizedScope}/`)
+  );
+}
+
 export function uniqueFiles(files: ComparedFile[]): ComparedFile[] {
   const byPath = new Map<string, ComparedFile>();
   for (const file of files) {

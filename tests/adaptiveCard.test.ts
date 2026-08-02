@@ -105,7 +105,7 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
 test("generates readable plain-text output from typed results", () => {
   const output = generatePlainTextResults(comparison());
   assert.match(output, /2026\.10 -> 2026\.11/);
-  assert.match(output, /PR #42: Add release telemetry/);
+  assert.match(output, /PR #42: Add release telemetry — Ada Lovelace/);
   assert.match(output, /1 pull requests \| 1 commits \| 1 files/);
 });
 

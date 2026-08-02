@@ -2,6 +2,19 @@
 
 All notable changes to ReleaseLens for Azure DevOps are documented here.
 
+## [3.1.0] - 2026-08-02
+
+### Added
+
+- Selectable changed-area filters for quickly isolating hotspots such as
+  `/packages/gaia` and `/packages/gaia-chat` without rerunning a comparison.
+
+### Fixed
+
+- Preserve author names when copying pull requests and direct commits.
+- Use a dedicated transparent monochrome Activity Bar icon instead of the
+  filled Marketplace artwork.
+
 ## [3.0.1] - 2026-08-02
 
 ### Fixed

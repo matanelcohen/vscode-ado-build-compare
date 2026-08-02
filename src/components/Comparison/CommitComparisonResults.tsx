@@ -16,7 +16,10 @@ import {
 } from "@fluentui/react-components";
 import { SearchRegular } from "@fluentui/react-icons";
 import { ComparisonResult } from "../../models/comparison";
-import { summarizeFileHotspots } from "../../utils/comparison";
+import {
+  isPathWithinScope,
+  summarizeFileHotspots,
+} from "../../utils/comparison";
 
 interface CommitComparisonResultsProps {
   result: ComparisonResult;
@@ -140,11 +143,23 @@ export const CommitComparisonResults: React.FC<
   const [commitKind, setCommitKind] = React.useState<
     "all" | "pull-request" | "direct"
   >("all");
+  const [selectedPath, setSelectedPath] = React.useState<string | null>(null);
   const [visibleLimit, setVisibleLimit] = React.useState(50);
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const scopedCommits = React.useMemo(
+    () =>
+      selectedPath
+        ? result.commits.filter((commit) =>
+            commit.files.some((file) =>
+              isPathWithinScope(file.path, selectedPath)
+            )
+          )
+        : result.commits,
+    [result.commits, selectedPath]
+  );
   const filteredCommits = React.useMemo(
     () =>
-      result.commits.filter((commit) => {
+      scopedCommits.filter((commit) => {
         if (commitKind === "pull-request" && !commit.pullRequest) {
           return false;
         }
@@ -164,21 +179,25 @@ export const CommitComparisonResults: React.FC<
           value?.toLocaleLowerCase().includes(normalizedQuery)
         );
       }),
-    [commitKind, normalizedQuery, result.commits]
+    [commitKind, normalizedQuery, scopedCommits]
   );
   const visibleCommits = filteredCommits.slice(0, visibleLimit);
   const directCommitCount = React.useMemo(
-    () => result.commits.filter((commit) => !commit.pullRequest).length,
-    [result.commits]
+    () => scopedCommits.filter((commit) => !commit.pullRequest).length,
+    [scopedCommits]
   );
   const hotspots = React.useMemo(
-    () => summarizeFileHotspots(result.files),
+    () => summarizeFileHotspots(result.files, 12),
     [result.files]
   );
 
   React.useEffect(() => {
     setVisibleLimit(50);
-  }, [commitKind, normalizedQuery, result]);
+  }, [commitKind, normalizedQuery, result, selectedPath]);
+
+  React.useEffect(() => {
+    setSelectedPath(null);
+  }, [result]);
 
   return (
     <Card className={styles.card}>
@@ -254,11 +273,31 @@ export const CommitComparisonResults: React.FC<
       )}
       {hotspots.length > 0 && (
         <div className={styles.hotspots}>
-          <Caption1>Change hotspots:</Caption1>
+          <Caption1>Filter by changed area:</Caption1>
+          <Button
+            size="small"
+            appearance={selectedPath === null ? "primary" : "secondary"}
+            aria-pressed={selectedPath === null}
+            onClick={() => setSelectedPath(null)}
+          >
+            All · {result.files.length}
+          </Button>
           {hotspots.map((hotspot) => (
-            <Badge appearance="tint" key={hotspot.path}>
+            <Button
+              size="small"
+              appearance={
+                selectedPath === hotspot.path ? "primary" : "secondary"
+              }
+              aria-pressed={selectedPath === hotspot.path}
+              key={hotspot.path}
+              onClick={() =>
+                setSelectedPath((current) =>
+                  current === hotspot.path ? null : hotspot.path
+                )
+              }
+            >
               {hotspot.path} · {hotspot.count}
-            </Badge>
+            </Button>
           ))}
         </div>
       )}
@@ -279,7 +318,7 @@ export const CommitComparisonResults: React.FC<
                 appearance={commitKind === "all" ? "primary" : "secondary"}
                 onClick={() => setCommitKind("all")}
               >
-                All · {result.commits.length}
+                All · {scopedCommits.length}
               </Button>
               <Button
                 size="small"
@@ -288,7 +327,7 @@ export const CommitComparisonResults: React.FC<
                 }
                 onClick={() => setCommitKind("pull-request")}
               >
-                Pull requests · {result.commits.length - directCommitCount}
+                Pull requests · {scopedCommits.length - directCommitCount}
               </Button>
               <Button
                 size="small"

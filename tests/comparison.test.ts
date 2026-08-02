@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isPathRelevant,
+  isPathWithinScope,
   mapWithConcurrency,
   normalizePath,
   parsePathFilters,
@@ -34,6 +35,19 @@ test("matches path boundaries instead of partial folder names", () => {
   assert.equal(isPathRelevant("/src/application/index.ts", filters), false);
   assert.equal(isPathRelevant("/any/path", []), true);
   assert.equal(isPathRelevant("/any/path", ["/"]), true);
+});
+
+test("filters a selected changed area without matching sibling prefixes", () => {
+  assert.equal(isPathWithinScope("/packages/gaia/app.ts", "/packages/gaia"), true);
+  assert.equal(isPathWithinScope("/packages/gaia", "/packages/gaia"), true);
+  assert.equal(
+    isPathWithinScope("/packages/gaia-chat/app.ts", "/packages/gaia"),
+    false
+  );
+  assert.equal(
+    isPathWithinScope("/packages/GAIA/app.ts", "/packages/gaia"),
+    true
+  );
 });
 
 test("deduplicates files and identities deterministically", () => {

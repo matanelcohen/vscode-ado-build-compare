@@ -11,13 +11,15 @@ export function generatePlainTextResults(result: ComparisonResult): string {
 
   for (const commit of result.commits) {
     const message = commit.message.split("\n")[0] || "No commit message";
+    const author =
+      commit.pullRequest?.createdBy.displayName ?? commit.author.displayName;
     if (commit.pullRequest) {
       lines.push(
-        `- PR #${commit.pullRequest.id}: ${commit.pullRequest.title}`,
+        `- PR #${commit.pullRequest.id}: ${commit.pullRequest.title} — ${author}`,
         `  ${commit.pullRequest.url}`
       );
     } else {
-      lines.push(`- ${commit.id.slice(0, 7)}: ${message}`);
+      lines.push(`- ${commit.id.slice(0, 7)}: ${message} — ${author}`);
     }
   }
 
