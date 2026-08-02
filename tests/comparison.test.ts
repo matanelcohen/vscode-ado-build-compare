@@ -32,6 +32,8 @@ test("matches path boundaries instead of partial folder names", () => {
   assert.equal(isPathRelevant("/src/app/index.ts", filters), true);
   assert.equal(isPathRelevant("/src/app", filters), true);
   assert.equal(isPathRelevant("/packages/gaia/app.ts", ["/gaia"]), true);
+  assert.equal(isPathRelevant("/packages/gaia-chat/app.ts", ["/gaia"]), true);
+  assert.equal(isPathRelevant("/packages/gaiachat/app.ts", ["/gaia"]), false);
   assert.equal(isPathRelevant("/src/application/index.ts", filters), false);
   assert.equal(isPathRelevant("/any/path", []), true);
   assert.equal(isPathRelevant("/any/path", ["/"]), true);
@@ -77,10 +79,13 @@ test("summarizes the busiest changed areas", () => {
     summarizeFileHotspots([
       { path: "/packages/gaia/a.ts", changeType: "Edit" },
       { path: "/packages/gaia/b.ts", changeType: "Add" },
+      { path: "/packages/gaia-chat/c.ts", changeType: "Edit" },
+      { path: "/packages/gaia-chat/d.ts", changeType: "Edit" },
       { path: "/infra/main.bicep", changeType: "Edit" },
     ]),
     [
       { path: "/packages/gaia", count: 2 },
+      { path: "/packages/gaia-chat", count: 2 },
       { path: "/infra/main.bicep", count: 1 },
     ]
   );

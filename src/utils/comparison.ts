@@ -34,7 +34,8 @@ export function isPathRelevant(path: string, filters: string[]): boolean {
     return pathSegments.some((_segment, start) =>
       filterSegments.every(
         (filterSegment, offset) =>
-          pathSegments[start + offset] === filterSegment
+          pathSegments[start + offset] === filterSegment ||
+          pathSegments[start + offset]?.startsWith(`${filterSegment}-`)
       )
     );
   });

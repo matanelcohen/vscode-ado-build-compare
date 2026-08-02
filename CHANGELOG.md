@@ -2,6 +2,14 @@
 
 All notable changes to ReleaseLens for Azure DevOps are documented here.
 
+## [3.1.1] - 2026-08-02
+
+### Fixed
+
+- Treat hyphenated service folders as members of a configured path family, so
+  `/gaia` includes both `/packages/gaia` and `/packages/gaia-chat` while
+  keeping them as separate selectable changed areas.
+
 ## [3.1.0] - 2026-08-02
 
 ### Added
