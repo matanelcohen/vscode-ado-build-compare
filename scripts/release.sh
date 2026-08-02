@@ -35,9 +35,10 @@ npm run check
 npm run package
 if [[ "$CURRENT_VERSION" != "$VERSION" ]]; then
   git add package.json package-lock.json
-  git commit -m "chore: release $TAG"
+  git commit -m "chore: release $TAG" \
+    -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 fi
-git tag -a "$TAG" -m "Build Compare Tools $VERSION"
+git tag -a "$TAG" -m "ReleaseLens $VERSION"
 git push --atomic origin main "$TAG"
 
 echo "Release workflow started: https://github.com/matanelcohen/vscode-ado-build-compare/actions"

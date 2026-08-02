@@ -95,9 +95,9 @@ jobs:
           else
             gh release create "$TAG" "$PACKAGE" \
               --verify-tag \
-              --title "Build Compare Tools $VERSION" \
+              --title "ReleaseLens $VERSION" \
               --generate-notes \
-              --notes "Professional release intelligence for Azure DevOps: native VS Code dashboard, guided onboarding, multi-environment profiles, risk analysis, Copilot summaries, Teams Adaptive Cards, history, drift analysis, exports, and work-item creation. Requires VS Code 1.91 or later and Microsoft authentication."
+              --notes "ReleaseLens turns Azure DevOps pipeline history into a release briefing inside VS Code. Explore the sample release without signing in, then connect Azure DevOps for accurate comparisons, deployment risk, Copilot summaries, Teams Adaptive Cards, history, drift analysis, exports, and work-item creation. Requires VS Code 1.91 or later."
           fi
 
       - name: Publish to VS Code Marketplace
