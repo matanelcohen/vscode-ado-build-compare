@@ -2,7 +2,7 @@
   "name": "fe-ninja-tools",
   "displayName": "Build Compare Tools",
   "description": "Azure DevOps build comparison and analysis tools",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "publisher": "matancohenmsft",
   "license": "MIT",
   "icon": "media/logo2.png",
