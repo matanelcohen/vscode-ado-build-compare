@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .page { width: 900px; }
+  .sticky { display: flex; align-items: center; gap: 9px; padding: 9px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .content { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .verdict { border: 1px solid var(--border); border-left: 4px solid var(--amber); border-radius: 7px; background: var(--bg2); padding: 16px 18px; }
+  .vhead { display: flex; align-items: center; gap: 11px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--amber); }
+  .vtitle { font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+  .vscore { margin-left: auto; font-size: 12px; color: var(--fg-dim); }
+  .vbody { margin-top: 9px; font-size: 13.5px; line-height: 1.6; }
+  .vbody b { color: #fff; }
+  .vacts { display: flex; gap: 8px; margin-top: 14px; }
+  .acc { border: 1px solid var(--border); border-radius: 6px; background: var(--bg2); overflow: hidden; }
+  .ahead { display: flex; align-items: center; gap: 9px; padding: 10px 14px; cursor: pointer; }
+  .ahead + .abody { border-top: 1px solid var(--border); padding: 4px 14px; }
+  .ahead .caret { color: var(--fg-dim); width: 11px; }
+  .ahead .t { font-weight: 600; font-size: 13px; }
+  .ahead .c { margin-left: auto; }
+  .prrow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #303030; font-size: 12.5px; }
+  .prrow:last-child { border-bottom: none; }
+  .prrow a { color: #4daafc; text-decoration: none; }
+  .prrow .who { color: var(--fg-dim); margin-left: auto; font-size: 11.5px; }
+  .prrow .n { color: #6f6f6f; font-size: 11.5px; width: 62px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="frame page">
+  <div class="mocklabel">Mockup C &mdash; &ldquo;Release Report&rdquo; &middot; summary-first, progressive disclosure</div>
+
+  <div class="topbar">
+    <div class="brand"><span class="logo"></span> ReleaseLens</div>
+    <div class="acts">
+      <button class="btn ghost">&#8635;</button>
+      <button class="btn ghost">&#9881;</button>
+    </div>
+  </div>
+
+  <div class="sticky">
+    <span class="chip on">Prod</span>
+    <b>#20240612.3</b> <span class="dim">&rarr;</span> <b>#20240701.1</b>
+    <span class="hash">a1b3f9c &hellip; 7f21ed4</span>
+    <button class="btn sm ghost" style="margin-left:auto">&#9998; Change comparison&hellip;</button>
+  </div>
+
+  <div class="content">
+    <div class="verdict">
+      <div class="vhead">
+        <span class="dot"></span>
+        <span class="vtitle">MEDIUM RISK</span>
+        <span class="vscore">47 / 100 &middot; analyzed 38 commits in 2.4s</span>
+      </div>
+      <div class="vbody">
+        <b>38 commits</b> from <b>7 contributors</b> across <b>96 files</b>, delivered in <b>12 pull requests</b>.<br>
+        Includes <b>2 database migrations</b> and <b>1 pipeline config change</b> &mdash; review before promoting.
+      </div>
+      <div class="vacts">
+        <button class="btn primary">Copy summary</button>
+        <button class="btn">Share to Teams</button>
+        <button class="btn">Export &#9662;</button>
+        <button class="btn ghost">Open in Azure DevOps &#8599;</button>
+      </div>
+    </div>
+
+    <div class="acc">
+      <div class="ahead">
+        <span class="caret">&#9662;</span><span class="t">Pull requests</span>
+        <span class="badge neutral">12</span>
+      </div>
+      <div class="abody">
+        <div class="prrow"><a>#1420 Add retry to sync worker</a><span class="who">j.doe</span><span class="n">6 files</span></div>
+        <div class="prrow"><a>#1418 Fix null deref in manifest parser</a><span class="who">a.kruger</span><span class="n">2 files</span></div>
+        <div class="prrow"><a>#1411 Migrate release table to new schema</a> <span class="badge warn">migration</span><span class="who">m.silva</span><span class="n">11 files</span></div>
+        <div class="prrow"><a>#1409 Cache pipeline metadata lookups</a><span class="who">r.patel</span><span class="n">4 files</span></div>
+        <div class="prrow"><span class="muted">Show 8 more&hellip;</span></div>
+      </div>
+    </div>
+
+    <div class="acc">
+      <div class="ahead"><span class="caret">&#9656;</span><span class="t">Direct commits</span><span class="badge neutral">7</span><span class="c dim" style="font-size:11.5px">build-bot, m.silva, +2</span></div>
+    </div>
+    <div class="acc">
+      <div class="ahead"><span class="caret">&#9656;</span><span class="t">Changed files</span><span class="badge neutral">96</span><span class="c dim" style="font-size:11.5px">services/api 41 &middot; libs/core 22 &middot; web/app 14</span></div>
+    </div>
+    <div class="acc">
+      <div class="ahead"><span class="caret">&#9656;</span><span class="t">Risk signals</span><span class="badge warn">3</span><span class="c dim" style="font-size:11.5px">migrations &middot; config &middot; volume</span></div>
+    </div>
+    <div class="acc">
+      <div class="ahead"><span class="caret">&#9656;</span><span class="t">Recent comparisons</span><span class="badge neutral">5</span><span class="c dim" style="font-size:11.5px">last run 3h ago</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

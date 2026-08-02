@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .page { width: 980px; }
+  .diffbar { padding: 16px; border-bottom: 1px solid var(--border); }
+  .fromto { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 10px; align-items: stretch; }
+  .buildcard { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; }
+  .buildcard.target { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0,120,212,.35); }
+  .buildcard .num { font-weight: 600; font-size: 14px; }
+  .swap { display: flex; align-items: center; justify-content: center; }
+  .swapbtn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--fg-dim); }
+  .scoperow { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .results { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .hero { display: flex; align-items: center; gap: 18px; padding: 13px 15px; border-radius: 6px; background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--amber); }
+  .heronum { font-size: 26px; font-weight: 700; color: var(--amber); line-height: 1; }
+  .stat { text-align: center; }
+  .stat b { display: block; font-size: 17px; font-weight: 600; }
+  .stat span { font-size: 10.5px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .08em; }
+  .stats { display: flex; gap: 22px; margin-left: auto; }
+  .crumb { display: flex; align-items: center; gap: 8px; padding: 7px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="frame page">
+  <div class="mocklabel">Mockup A &mdash; &ldquo;Diff Bar&rdquo; &middot; focused linear flow, no top-level tabs</div>
+
+  <div class="topbar">
+    <div class="brand"><span class="logo"></span> ReleaseLens <span class="chip">Prod &#9662;</span></div>
+    <div class="acts">
+      <button class="btn ghost">&#8635; Refresh</button>
+      <button class="btn ghost">&#9881; Settings</button>
+      <button class="btn ghost">&#8943;</button>
+    </div>
+  </div>
+
+  <div class="diffbar">
+    <div class="fromto">
+      <div>
+        <span class="label">From (base)</span>
+        <div class="buildcard">
+          <div class="row between">
+            <span class="num">#20240612.3</span>
+            <span class="badge ok">Succeeded</span>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <span class="hash">a1b3f9c</span>
+            <span class="dim">&middot; 2d ago</span>
+          </div>
+          <div class="m dim trunc" style="margin-top:5px;font-size:11.5px">Merged PR 1402: Harden token refresh path</div>
+        </div>
+      </div>
+      <div class="swap"><div class="swapbtn">&#8646;</div></div>
+      <div>
+        <span class="label">To (target)</span>
+        <div class="buildcard target">
+          <div class="row between">
+            <span class="num">#20240701.1</span>
+            <span class="badge ok">Succeeded</span>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <span class="hash">7f21ed4</span>
+            <span class="dim">&middot; 3h ago</span>
+          </div>
+          <div class="m dim trunc" style="margin-top:5px;font-size:11.5px">Merged PR 1420: Add retry to sync worker</div>
+        </div>
+      </div>
+    </div>
+    <div class="scoperow">
+      <div class="row">
+        <span class="chip">&#9673; scope: services/api</span>
+        <span class="chip">libs/*</span>
+        <span class="muted" style="font-size:11px">edit in settings</span>
+      </div>
+      <button class="btn primary">Analyze release &#9656;</button>
+    </div>
+  </div>
+
+  <div class="crumb">
+    <span class="dim">Analyzed</span>
+    <b>#20240612.3</b><span class="dim">&rarr;</span><b>#20240701.1</b>
+    <button class="btn sm ghost">&#9998; Change</button>
+    <span style="margin-left:auto" class="row">
+      <button class="btn sm">Copy</button>
+      <button class="btn sm">Share to Teams</button>
+      <button class="btn sm">Export &#9662;</button>
+    </span>
+  </div>
+
+  <div class="results">
+    <div class="hero">
+      <div>
+        <div class="heronum">47</div>
+        <div style="font-size:10.5px;letter-spacing:.08em" class="dim">/100 &middot; MEDIUM</div>
+      </div>
+      <div style="max-width:330px">
+        <b>Release risk</b>
+        <div class="dim" style="font-size:11.5px;margin-top:3px">2 database migrations and 1 pipeline config change are included in this release.</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>12</b><span>PRs</span></div>
+        <div class="stat"><b>38</b><span>Commits</span></div>
+        <div class="stat"><b>96</b><span>Files</span></div>
+        <div class="stat"><b>7</b><span>Authors</span></div>
+      </div>
+    </div>
+
+    <div class="search">&#128269; Filter by PR, contributor, message, or file&hellip;</div>
+    <div class="row between">
+      <div class="row">
+        <span class="chip on">All &middot; 38</span>
+        <span class="chip">Pull requests &middot; 31</span>
+        <span class="chip">Direct &middot; 7</span>
+        <span style="width:10px"></span>
+        <span class="chip">services/api &middot; 41</span>
+        <span class="chip">libs/core &middot; 22</span>
+      </div>
+      <span class="muted" style="font-size:11px">Showing 38 of 38</span>
+    </div>
+
+    <div class="card" style="padding:4px 14px">
+      <div class="commit">
+        <div class="t"><a>PR #1420 &middot; Add retry to sync worker</a> <span class="badge ok">merged</span></div>
+        <div class="m">j.doe &middot; <span class="mono">a1b3f9c</span> &middot; 6 changed files</div>
+        <div class="f">services/api/sync.ts &middot; services/api/retry.ts &middot; +4 more</div>
+      </div>
+      <div class="commit">
+        <div class="t"><a>PR #1418 &middot; Fix null deref in manifest parser</a></div>
+        <div class="m">a.kruger &middot; <span class="mono">33be901</span> &middot; 2 changed files</div>
+        <div class="f">libs/core/manifest.ts &middot; libs/core/manifest.test.ts</div>
+      </div>
+      <div class="commit">
+        <div class="t"><span class="badge neutral">Direct commit</span> <span>Bump dependency versions</span></div>
+        <div class="m">build-bot &middot; <span class="mono">c0ffee1</span> &middot; 3 changed files</div>
+        <div class="f">package.json &middot; package-lock.json &middot; +1 more</div>
+      </div>
+      <div class="commit">
+        <div class="t"><a>PR #1411 &middot; Migrate release table to new schema</a> <span class="badge warn">migration</span></div>
+        <div class="m">m.silva &middot; <span class="mono">9ab77c2</span> &middot; 11 changed files</div>
+        <div class="f">db/migrations/0042_release.sql &middot; services/api/store.ts &middot; +9 more</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
