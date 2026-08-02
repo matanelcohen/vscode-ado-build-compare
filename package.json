@@ -2,7 +2,7 @@
   "name": "fe-ninja-tools",
   "displayName": "ReleaseLens for Azure DevOps",
   "description": "See what changed, assess deployment risk, and publish release intelligence from Azure DevOps.",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "publisher": "matancohenmsft",
   "license": "MIT",
   "icon": "media/releaselens.png",
@@ -34,7 +34,6 @@
     "vscode": "^1.91.0"
   },
   "categories": [
-    "Azure Pipelines",
     "Visualization",
     "Other"
   ],

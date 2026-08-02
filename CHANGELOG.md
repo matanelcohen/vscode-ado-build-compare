@@ -2,6 +2,13 @@
 
 All notable changes to ReleaseLens for Azure DevOps are documented here.
 
+## [3.0.1] - 2026-08-02
+
+### Fixed
+
+- Removed an unsupported Marketplace category that blocked publication of the
+  ReleaseLens 3.0 package.
+
 ## [3.0.0] - 2026-08-02
 
 ### Added
