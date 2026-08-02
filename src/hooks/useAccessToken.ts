@@ -50,10 +50,8 @@ export function useAuthAndConfig(vscode: VsCodeApi | undefined): {
         setProfile(message.profile ?? null);
         setProfiles(message.profiles ?? []);
         setNeedsOnboarding(Boolean(message.needsOnboarding));
-        if (!message.authenticated || message.error) {
-          setError(
-            message.error || "Could not authenticate with Azure DevOps."
-          );
+        if (message.error) {
+          setError(message.error);
         } else if (!message.config) {
           setError(null);
         }

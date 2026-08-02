@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import axios from "axios";
+import { randomUUID } from "node:crypto";
 import { AdcPipelineViewerConfig } from "./api-sdk";
 import { AdoService } from "./services/AdoService";
 import { TeamsShareRequest } from "./models/comparison";
@@ -21,6 +22,11 @@ import {
   generateDeterministicSummary,
 } from "./utils/riskAnalysis";
 import { DashboardTreeProvider } from "./services/DashboardTreeProvider";
+import { createDemoComparison } from "./demo/demoComparison";
+import {
+  createProfileExport,
+  parseProfileImport,
+} from "./utils/profileTransfer";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
 let webviewReady = false;
@@ -28,6 +34,7 @@ let pendingComparison: unknown;
 const teamsWebhookSecretKey = "buildCompareTools.teamsWorkflowWebhook";
 const teamsDestinationStateKey = "buildCompareTools.teamsDestinationName";
 const automationStateKey = "buildCompareTools.automationState.v1";
+const walkthroughShownStateKey = "releaselens.walkthroughShown.v1";
 
 function getLegacyExtensionConfig(): AdcPipelineViewerConfig | null {
   const config = vscode.workspace.getConfiguration("buildCompareTools");
@@ -195,7 +202,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
     if (snapshot.activeProfile) {
       statusBar.text = `$(compare-changes) ${snapshot.activeProfile.name}`;
-      statusBar.tooltip = `Build Compare Tools · ${snapshot.activeProfile.config.targetStageName}`;
+      statusBar.tooltip = `ReleaseLens · ${snapshot.activeProfile.config.targetStageName}`;
       statusBar.show();
     } else {
       statusBar.hide();
@@ -203,6 +210,19 @@ export function activate(context: vscode.ExtensionContext) {
     dashboardProvider.refresh();
   };
   void refreshChrome();
+  void profileInitialization.then(async () => {
+    if (
+      !context.globalState.get<boolean>(walkthroughShownStateKey) &&
+      !profileStore.getSnapshot().activeProfile
+    ) {
+      await context.globalState.update(walkthroughShownStateKey, true);
+      await vscode.commands.executeCommand(
+        "workbench.action.openWalkthrough",
+        "matancohenmsft.fe-ninja-tools#releaselens.getStarted",
+        false
+      );
+    }
+  });
   let automationRunning = false;
   const runAutomations = async () => {
     if (automationRunning) {
@@ -412,6 +432,133 @@ export function activate(context: vscode.ExtensionContext) {
           pendingComparison = undefined;
         }
       }
+    ),
+    vscode.commands.registerCommand("fe-ninja-tools.openDemo", async () => {
+      pendingComparison = createDemoComparison();
+      await vscode.commands.executeCommand("fe-ninja-tools.showPipelines");
+      if (webviewReady) {
+        currentPanel?.webview.postMessage({
+          command: "loadComparison",
+          result: pendingComparison,
+        });
+        pendingComparison = undefined;
+      }
+    }),
+    vscode.commands.registerCommand("fe-ninja-tools.sendFeedback", async () => {
+      const url = vscode.Uri.parse(
+        "https://github.com/matanelcohen/vscode-ado-build-compare/issues/new?template=feedback.yml&title=%5BFeedback%5D%20"
+      );
+      await vscode.env.openExternal(url);
+    }),
+    vscode.commands.registerCommand("fe-ninja-tools.openPrivacy", async () => {
+      await vscode.env.openExternal(
+        vscode.Uri.parse(
+          "https://github.com/matanelcohen/vscode-ado-build-compare/blob/main/PRIVACY.md"
+        )
+      );
+    }),
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.copyDiagnostics",
+      async () => {
+        const snapshot = profileStore.getSnapshot();
+        const diagnostics = {
+          product: "ReleaseLens for Azure DevOps",
+          extensionVersion:
+            vscode.extensions.getExtension(
+              "matancohenmsft.fe-ninja-tools"
+            )?.packageJSON.version ?? "development",
+          vscodeVersion: vscode.version,
+          platform: process.platform,
+          architecture: process.arch,
+          profileCount: snapshot.profiles.length,
+          hasActiveProfile: Boolean(snapshot.activeProfile),
+          teamsConfigured: Boolean(
+            await context.secrets.get(teamsWebhookSecretKey)
+          ),
+        };
+        await vscode.env.clipboard.writeText(
+          JSON.stringify(diagnostics, null, 2)
+        );
+        vscode.window.showInformationMessage(
+          "Safe ReleaseLens diagnostics copied."
+        );
+      }
+    ),
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.manageProfiles",
+      async () => {
+        const choice = await vscode.window.showQuickPick(
+          [
+            {
+              label: "$(export) Export profiles",
+              description: "Share non-secret pipeline setup with your team",
+              action: "export",
+            },
+            {
+              label: "$(import) Import profiles",
+              description: "Add profiles from a ReleaseLens JSON file",
+              action: "import",
+            },
+          ],
+          {
+            title: "Share ReleaseLens team setup",
+            placeHolder: "Choose an action",
+          }
+        );
+        if (!choice) {
+          return;
+        }
+        if (choice.action === "export") {
+          const snapshot = profileStore.getSnapshot();
+          if (snapshot.profiles.length === 0) {
+            vscode.window.showInformationMessage(
+              "Create a pipeline profile before exporting."
+            );
+            return;
+          }
+          const target = await vscode.window.showSaveDialog({
+            title: "Export ReleaseLens profiles",
+            defaultUri: vscode.Uri.file("releaselens-profiles.json"),
+            filters: { JSON: ["json"] },
+          });
+          if (target) {
+            await vscode.workspace.fs.writeFile(
+              target,
+              new TextEncoder().encode(
+                JSON.stringify(createProfileExport(snapshot.profiles), null, 2)
+              )
+            );
+          }
+          return;
+        }
+
+        const sources = await vscode.window.showOpenDialog({
+          title: "Import ReleaseLens profiles",
+          canSelectMany: false,
+          filters: { JSON: ["json"] },
+        });
+        const source = sources?.[0];
+        if (!source) {
+          return;
+        }
+        const parsed: unknown = JSON.parse(
+          new TextDecoder().decode(await vscode.workspace.fs.readFile(source))
+        );
+        const imported = parseProfileImport(parsed, randomUUID);
+        for (const profile of imported) {
+          await profileStore.upsert(profile, false);
+        }
+        if (imported[0]) {
+          await profileStore.setActive(imported[0].id);
+        }
+        await refreshChrome();
+        currentPanel?.webview.postMessage({ command: "profilesChanged" });
+        vscode.window.showInformationMessage(
+          `Imported ${imported.length} ReleaseLens profile${
+            imported.length === 1 ? "" : "s"
+          }.`
+        );
+      }
     )
   );
 
@@ -428,7 +575,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       currentPanel = vscode.window.createWebviewPanel(
         "gaiaToolsReport",
-        "Build Compare Tools - Compare Builds",
+        "ReleaseLens · Release Intelligence",
         column || vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -485,7 +632,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const session = await vscode.authentication.getSession(
                   "microsoft",
                   ["499b84ac-1321-427f-aa17-267ca6975798/.default"],
-                  { createIfNone: true }
+                  { createIfNone: false }
                 );
 
                 currentPanel?.webview.postMessage({
@@ -1065,7 +1212,7 @@ function getWebviewContent(
   );
   const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
   const nonce = getNonce();
-  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n              <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;">\n            <title>Build Compare Tools</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
+  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n              <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;">\n              <title>ReleaseLens</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
 }
 
 function getNonce() {

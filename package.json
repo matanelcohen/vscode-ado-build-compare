@@ -1,11 +1,11 @@
 {
   "name": "fe-ninja-tools",
-  "displayName": "Build Compare Tools",
-  "description": "Azure DevOps build comparison and analysis tools",
-  "version": "2.1.1",
+  "displayName": "ReleaseLens for Azure DevOps",
+  "description": "See what changed, assess deployment risk, and publish release intelligence from Azure DevOps.",
+  "version": "3.0.0",
   "publisher": "matancohenmsft",
   "license": "MIT",
-  "icon": "media/logo2.png",
+  "icon": "media/releaselens.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/matanelcohen/vscode-ado-build-compare.git"
@@ -22,13 +22,20 @@
     "comparison",
     "git",
     "deployment",
-    "ci-cd"
+    "ci-cd",
+    "release-notes",
+    "release-management",
+    "devops",
+    "teams",
+    "copilot"
   ],
   "sideEffects": false,
   "engines": {
     "vscode": "^1.91.0"
   },
   "categories": [
+    "Azure Pipelines",
+    "Visualization",
     "Other"
   ],
   "activationEvents": [
@@ -41,58 +48,88 @@
     "commands": [
       {
         "command": "fe-ninja-tools.showPipelines",
-        "title": "Open Comparison Workspace",
-        "category": "Build Compare Tools",
+        "title": "Open Release Workspace",
+        "category": "ReleaseLens",
         "icon": "$(compare-changes)"
+      },
+      {
+        "command": "fe-ninja-tools.openDemo",
+        "title": "Explore Sample Release",
+        "category": "ReleaseLens",
+        "icon": "$(preview)"
       },
       {
         "command": "fe-ninja-tools.refresh",
         "title": "Refresh",
-        "category": "Build Compare Tools",
+        "category": "ReleaseLens",
         "icon": "$(refresh)"
       },
       {
         "command": "fe-ninja-tools.openSettings",
-        "title": "Open Build Compare Tools Settings",
+        "title": "Open ReleaseLens Settings",
         "icon": "$(settings-gear)"
       },
       {
         "command": "fe-ninja-tools.configureTeams",
         "title": "Configure Teams Workflow",
-        "category": "Build Compare Tools",
+        "category": "ReleaseLens",
         "icon": "$(comment-discussion)"
       },
       {
         "command": "fe-ninja-tools.setupProfile",
         "title": "Add Pipeline Profile",
-        "category": "Build Compare Tools",
+        "category": "ReleaseLens",
         "icon": "$(add)"
       },
       {
         "command": "fe-ninja-tools.switchProfile",
         "title": "Switch Pipeline Profile",
-        "category": "Build Compare Tools",
+        "category": "ReleaseLens",
         "icon": "$(list-selection)"
       },
       {
         "command": "fe-ninja-tools.deleteProfile",
         "title": "Delete Pipeline Profile",
-        "category": "Build Compare Tools",
+        "category": "ReleaseLens",
         "icon": "$(trash)"
       },
       {
         "command": "fe-ninja-tools.editProfile",
         "title": "Edit Pipeline Profile",
-        "category": "Build Compare Tools",
+        "category": "ReleaseLens",
         "icon": "$(edit)"
+      },
+      {
+        "command": "fe-ninja-tools.sendFeedback",
+        "title": "Send Feedback",
+        "category": "ReleaseLens",
+        "icon": "$(feedback)"
+      },
+      {
+        "command": "fe-ninja-tools.openPrivacy",
+        "title": "View Privacy & Security",
+        "category": "ReleaseLens",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "fe-ninja-tools.manageProfiles",
+        "title": "Import or Export Pipeline Profiles",
+        "category": "ReleaseLens",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "fe-ninja-tools.copyDiagnostics",
+        "title": "Copy Safe Diagnostics",
+        "category": "ReleaseLens",
+        "icon": "$(copy)"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "build-compare-tools",
-          "title": "Build Compare Tools",
-          "icon": "media/logo2.png"
+          "title": "ReleaseLens",
+          "icon": "media/releaselens.svg"
         }
       ]
     },
@@ -108,7 +145,7 @@
     "viewsWelcome": [
       {
         "view": "build-compare-view",
-        "contents": "Connect Azure DevOps to compare releases, assess deployment risk, and share results with Teams.\n[Start guided setup](command:fe-ninja-tools.setupProfile)",
+        "contents": "Understand a release before it ships—changes, contributors, risk, and Teams-ready notes.\n[Explore sample release](command:fe-ninja-tools.openDemo)\n[Connect Azure DevOps](command:fe-ninja-tools.setupProfile)",
         "when": "!buildCompareTools.hasProfile"
       }
     ],
@@ -117,6 +154,13 @@
         {
           "command": "fe-ninja-tools.showPipelines",
           "when": "true"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "fe-ninja-tools.sendFeedback",
+          "when": "view == build-compare-view",
+          "group": "inline"
         }
       ],
       "editor/title": [
@@ -150,40 +194,69 @@
       ]
     },
     "configuration": {
-      "title": "Build Compare Tools",
+      "title": "ReleaseLens",
       "properties": {
         "buildCompareTools.organizationUrl": {
           "type": "string",
           "default": "",
-          "description": "Azure DevOps organization URL (e.g., https://dev.azure.com/yourorg)."
+          "description": "Legacy profile migration: Azure DevOps organization URL."
         },
         "buildCompareTools.projectName": {
           "type": "string",
           "default": "",
-          "description": "Azure DevOps project name."
+          "description": "Legacy profile migration: Azure DevOps project name."
         },
         "buildCompareTools.pipelineDefinitionId": {
           "type": "number",
           "default": 0,
-          "description": "The definition ID of the Azure Pipeline to monitor."
+          "description": "Legacy profile migration: Azure Pipeline definition ID."
         },
         "buildCompareTools.targetStageName": {
           "type": "string",
           "default": "",
-          "description": "The name of the target deployment stage in the pipeline."
+          "description": "Legacy profile migration: target deployment stage."
         },
         "buildCompareTools.repositoryId": {
           "type": "string",
           "default": "",
-          "description": "The ID or name of the repository associated with the pipeline."
+          "description": "Legacy profile migration: repository ID or name."
         },
         "buildCompareTools.relevantPathFilter": {
           "type": "string",
           "default": "",
-          "description": "Optional path filter to consider commits relevant (e.g., /src/frontend). Leave empty to include all."
+          "description": "Legacy profile migration: optional relevant path filters."
         }
       }
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "releaselens.getStarted",
+        "title": "Get started with ReleaseLens",
+        "description": "Reach your first release insight in under a minute.",
+        "steps": [
+          {
+            "id": "tryDemo",
+            "title": "Explore a sample release",
+            "description": "See risk, hotspots, pull requests, and share-ready output without signing in.\n[Open sample](command:fe-ninja-tools.openDemo)"
+          },
+          {
+            "id": "connectAdo",
+            "title": "Connect Azure DevOps",
+            "description": "Guided discovery finds your project, repository, pipeline, and deployment stage.\n[Start setup](command:fe-ninja-tools.setupProfile)"
+          },
+          {
+            "id": "compare",
+            "title": "Review a real release",
+            "description": "Compare builds and inspect exactly what changed.\n[Open workspace](command:fe-ninja-tools.showPipelines)"
+          },
+          {
+            "id": "share",
+            "title": "Share release intelligence",
+            "description": "Configure a Teams Workflow and publish an Adaptive Card.\n[Configure Teams](command:fe-ninja-tools.configureTeams)"
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile-production",
@@ -209,7 +282,6 @@
     "@types/node": "20.x",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
-    "@types/react-syntax-highlighter": "^15.5.13",
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.11.0",
@@ -230,9 +302,6 @@
     "axios": "^1.6.0",
     "azure-devops-node-api": "^15.1.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-markdown": "^10.1.0",
-    "react-router-dom": "^6.25.2",
-    "react-syntax-highlighter": "^15.6.1"
+    "react-dom": "^18.3.1"
   }
 }

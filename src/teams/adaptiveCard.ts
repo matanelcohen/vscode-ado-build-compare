@@ -3,6 +3,7 @@ import {
   TeamsMention,
   TeamsShareRequest,
 } from "../models/comparison";
+import { marketplaceUrl, productName } from "../product";
 
 interface AdaptiveCardMentionEntity {
   type: "mention";
@@ -132,16 +133,31 @@ export function buildTeamsWorkflowPayload(
       separator: true,
     });
   }
+  body.push({
+    type: "TextBlock",
+    text: `Created with [${productName}](${marketplaceUrl})`,
+    size: "Small",
+    isSubtle: true,
+    separator: true,
+    wrap: true,
+  });
 
-  const actions = buildUrl
-    ? [
+  const actions = [
+    ...(buildUrl
+      ? [
         {
           type: "Action.OpenUrl",
           title: "Open target build",
           url: buildUrl,
         },
-      ]
-    : [];
+        ]
+      : []),
+    {
+      type: "Action.OpenUrl",
+      title: "Get ReleaseLens",
+      url: marketplaceUrl,
+    },
+  ];
 
   return {
     type: "message",

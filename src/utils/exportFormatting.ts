@@ -1,5 +1,6 @@
 import { ComparisonResult } from "../models/comparison";
 import { generateDeterministicSummary } from "./riskAnalysis";
+import { marketplaceUrl, productName } from "../product";
 
 export type ExportFormat = "markdown" | "json";
 
@@ -59,6 +60,11 @@ export function formatComparisonExport(
       lines.push(`- **${signal.label}:** ${signal.description}`);
     }
   }
+  lines.push(
+    "",
+    "---",
+    `Generated with [${productName}](${marketplaceUrl}).`
+  );
   return lines.join("\n");
 }
 

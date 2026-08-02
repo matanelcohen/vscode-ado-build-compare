@@ -34,7 +34,7 @@ export async function runSmartOnboarding(
 ): Promise<PipelineProfile | null> {
   const current = store.getSnapshot().activeProfile;
   const organizationUrl = await vscode.window.showInputBox({
-    title: "Build Compare setup · 1/7",
+    title: "ReleaseLens setup · 1/7",
     prompt: "Enter your Azure DevOps organization URL.",
     placeHolder: "https://dev.azure.com/your-organization",
     value: current?.config.organizationUrl ?? "",
@@ -67,7 +67,7 @@ export async function runSmartOnboarding(
     }
   );
   const project = await pickNamedItem(
-    "Build Compare setup · 2/7",
+    "ReleaseLens setup · 2/7",
     "Select an Azure DevOps project",
     projects
       .filter((item) => item.id && item.name)
@@ -84,7 +84,7 @@ export async function runSmartOnboarding(
   const gitApi = await connection.getGitApi();
   const repositories = await gitApi.getRepositories(project.id);
   const repository = await pickNamedItem(
-    "Build Compare setup · 3/7",
+    "ReleaseLens setup · 3/7",
     "Select the repository built by this pipeline",
     repositories
       .filter((item) => item.id && item.name && !item.isDisabled)
@@ -113,7 +113,7 @@ export async function runSmartOnboarding(
     );
   }
   const definition = await pickNamedItem(
-    "Build Compare setup · 4/7",
+    "ReleaseLens setup · 4/7",
     "Select a build or deployment pipeline",
     definitions
       .filter((item) => item.id && item.name)
@@ -139,7 +139,7 @@ export async function runSmartOnboarding(
   }
 
   const relevantPathFilter = await vscode.window.showInputBox({
-    title: "Build Compare setup · 6/7",
+    title: "ReleaseLens setup · 6/7",
     prompt:
       "Optionally limit comparisons to repository paths. Separate multiple paths with commas.",
     placeHolder: "/src/frontend, /packages/shared",
@@ -152,7 +152,7 @@ export async function runSmartOnboarding(
 
   const suggestedName = `${project.name} · ${definition.name} · ${targetStageName}`;
   const profileName = await vscode.window.showInputBox({
-    title: "Build Compare setup · 7/7",
+    title: "ReleaseLens setup · 7/7",
     prompt: "Name this pipeline profile.",
     value: suggestedName,
     ignoreFocusOut: true,
@@ -430,7 +430,7 @@ async function pickStage(stageNames: string[]): Promise<string | null> {
         { label: manualLabel },
       ],
       {
-        title: "Build Compare setup · 5/7",
+        title: "ReleaseLens setup · 5/7",
         placeHolder: "Select the deployment stage to track",
         ignoreFocusOut: true,
       }
@@ -444,7 +444,7 @@ async function pickStage(stageNames: string[]): Promise<string | null> {
   }
   return (
     (await vscode.window.showInputBox({
-      title: "Build Compare setup · 5/7",
+      title: "ReleaseLens setup · 5/7",
       prompt: "Enter the deployment stage name exactly as it appears in ADO.",
       ignoreFocusOut: true,
       validateInput: (value) =>

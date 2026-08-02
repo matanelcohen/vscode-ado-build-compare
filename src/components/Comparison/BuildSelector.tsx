@@ -237,7 +237,7 @@ export const BuildSelector: React.FC<BuildSelectorProps> = ({
           onClick={onCompare}
           disabled={disabled || selectedBuildId === null}
         >
-          Compare Builds
+          Analyze release
         </Button>
       </div>
     </Card>

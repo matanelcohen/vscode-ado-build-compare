@@ -44,8 +44,9 @@ test("shows guided setup when no profile is configured", () => {
     [],
     false
   );
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0]?.command, "fe-ninja-tools.setupProfile");
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0]?.command, "fe-ninja-tools.openDemo");
+  assert.equal(rows[1]?.command, "fe-ninja-tools.setupProfile");
 });
 
 test("builds actionable profile, Teams, and history dashboard rows", () => {
@@ -61,9 +62,11 @@ test("builds actionable profile, Teams, and history dashboard rows", () => {
       "open-comparison",
       "refresh",
       "teams",
+      "feedback",
+      "share-profiles",
       "history-comparison-1",
     ]
   );
   assert.equal(rows[3]?.label, "Teams connected");
-  assert.deepEqual(rows[4]?.arguments, [history.result]);
+  assert.deepEqual(rows[6]?.arguments, [history.result]);
 });

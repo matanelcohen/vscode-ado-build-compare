@@ -65,6 +65,7 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
         type: string;
         version: string;
         body: Array<{ text?: string }>;
+        actions: Array<{ title: string; url: string }>;
         msteams: { entities: Array<{ mentioned: { id: string } }> };
       };
     }>;
@@ -87,6 +88,16 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
   assert.ok(
     payload.attachments[0]?.content.body.some((block) =>
       block.text?.includes("<at>Ada Lovelace</at>")
+    )
+  );
+  assert.ok(
+    payload.attachments[0]?.content.body.some((block) =>
+      block.text?.includes("ReleaseLens")
+    )
+  );
+  assert.ok(
+    payload.attachments[0]?.content.actions.some(
+      (action) => action.title === "Get ReleaseLens"
     )
   );
 });

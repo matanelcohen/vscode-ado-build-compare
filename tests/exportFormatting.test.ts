@@ -28,6 +28,7 @@ test("formats portable Markdown reports", () => {
   assert.match(output, /# Deployment comparison: 100 → 101/);
   assert.match(output, /Ready to ship/);
   assert.match(output, /Fix \\\*checkout\\\*/);
+  assert.match(output, /Generated with \[ReleaseLens/);
 });
 
 test("formats machine-readable JSON reports", () => {

@@ -1,7 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { MemoryRouter } from "react-router-dom";
 import { setVSCodeApi } from "./api-sdk";
 
 declare const acquireVsCodeApi: any;
@@ -15,9 +14,7 @@ if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
-      <MemoryRouter>
-        <App vscode={vscode} />
-      </MemoryRouter>
+      <App vscode={vscode} />
     </React.StrictMode>
   );
 } else {

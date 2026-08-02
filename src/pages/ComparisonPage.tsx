@@ -243,10 +243,11 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
       <div className={styles.header}>
         <div>
           <Title1 as="h1" className={styles.title}>
-            Deployment comparison
+            Release intelligence
           </Title1>
           <Body1>
-            Review everything introduced after the latest successful deployment.
+            Understand what changed, why it matters, and whether it is ready to
+            ship.
           </Body1>
         </div>
         <div className={styles.headerActions}>

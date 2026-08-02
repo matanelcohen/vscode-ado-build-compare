@@ -19,6 +19,13 @@ export function buildDashboardRows(
   if (!active) {
     return [
       {
+        id: "demo",
+        label: "Explore a sample release",
+        description: "No sign-in required",
+        icon: "preview",
+        command: "fe-ninja-tools.openDemo",
+      },
+      {
         id: "setup",
         label: "Connect Azure DevOps",
         description: "Start guided setup",
@@ -55,6 +62,20 @@ export function buildDashboardRows(
       description: teamsConfigured ? "Workflow ready" : "Adaptive Card delivery",
       icon: teamsConfigured ? "pass-filled" : "comment-discussion",
       command: "fe-ninja-tools.configureTeams",
+    },
+    {
+      id: "feedback",
+      label: "Send feedback",
+      description: "Help shape ReleaseLens",
+      icon: "feedback",
+      command: "fe-ninja-tools.sendFeedback",
+    },
+    {
+      id: "share-profiles",
+      label: "Share team setup",
+      description: "Export or import profiles",
+      icon: "cloud-download",
+      command: "fe-ninja-tools.manageProfiles",
     },
   ];
 

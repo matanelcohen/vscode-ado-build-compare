@@ -1,6 +1,33 @@
 # Changelog
 
-All notable changes to Build Compare Tools are documented here.
+All notable changes to ReleaseLens for Azure DevOps are documented here.
+
+## [3.0.0] - 2026-08-02
+
+### Added
+
+- Instant sample-release experience with realistic synthetic data and no
+  sign-in requirement.
+- First-run walkthrough, demo-first dashboard, feedback entry points, and safe
+  support diagnostics.
+- Validated profile import and export for sharing team setup without tokens,
+  webhook URLs, or enabled automation.
+- ReleaseLens attribution and installation links in Teams cards and Markdown
+  exports.
+- Product privacy, security, installation, feedback, and bug-report
+  documentation.
+- New Marketplace icon, hero artwork, categories, keywords, and listing
+  metadata.
+
+### Changed
+
+- Rebranded the product as ReleaseLens while preserving the existing extension
+  ID, settings, and stored profile compatibility.
+- Avoid authentication prompts until a real Azure DevOps action requires
+  access.
+- Removed unused Markdown, syntax-highlighting, and routing dependencies from
+  the webview.
+- Updated production dependencies to resolve all known runtime advisories.
 
 ## [2.1.1] - 2026-08-02
 
