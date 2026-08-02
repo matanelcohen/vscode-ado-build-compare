@@ -1,9 +1,30 @@
 import * as vscode from "vscode";
-import { exec } from "child_process";
+import axios from "axios";
 import { AdcPipelineViewerConfig } from "./api-sdk";
 import { AdoService } from "./services/AdoService";
+import { TeamsShareRequest } from "./models/comparison";
+import { buildTeamsWorkflowPayload } from "./teams/adaptiveCard";
+import { ProfileStore } from "./services/ProfileStore";
+import {
+  deletePipelineProfile,
+  editPipelineProfile,
+  pickActiveProfile,
+  runSmartOnboarding,
+} from "./services/OnboardingService";
+import { ComparisonHistoryStore } from "./services/ComparisonHistoryStore";
+import {
+  ExportFormat,
+  formatComparisonExport,
+} from "./utils/exportFormatting";
+import {
+  buildAiSummaryPrompt,
+  generateDeterministicSummary,
+} from "./utils/riskAnalysis";
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
+const teamsWebhookSecretKey = "buildCompareTools.teamsWorkflowWebhook";
+const teamsDestinationStateKey = "buildCompareTools.teamsDestinationName";
+const automationStateKey = "buildCompareTools.automationState.v1";
 
 class BuildCompareViewProvider implements vscode.WebviewViewProvider {
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -51,7 +72,7 @@ class BuildCompareViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
-function getExtensionConfig(): AdcPipelineViewerConfig | null {
+function getLegacyExtensionConfig(): AdcPipelineViewerConfig | null {
   const config = vscode.workspace.getConfiguration("buildCompareTools");
   const organizationUrl = config.get<string>("organizationUrl");
   const projectName = config.get<string>("projectName");
@@ -63,13 +84,10 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
   if (
     !organizationUrl ||
     !projectName ||
-    pipelineDefinitionId === undefined ||
+    !pipelineDefinitionId ||
     !targetStageName ||
     !repositoryId
   ) {
-    vscode.window.showErrorMessage(
-      "Build Compare Tools configuration is missing or incomplete in VS Code settings."
-    );
     return null;
   }
 
@@ -83,26 +101,217 @@ function getExtensionConfig(): AdcPipelineViewerConfig | null {
   };
 }
 
-async function loadCompareBuildsByDefault() {
+async function createAdoService(
+  store: ProfileStore,
+  profileId: string
+): Promise<AdoService> {
+  const profile = store.getProfile(profileId);
+  if (!profile) {
+    throw new Error("The requested pipeline profile no longer exists.");
+  }
+  const session = await vscode.authentication.getSession(
+    "microsoft",
+    ["499b84ac-1321-427f-aa17-267ca6975798/.default"],
+    { createIfNone: true }
+  );
+  if (!session.accessToken) {
+    throw new Error("Microsoft authentication did not return an access token.");
+  }
+  return new AdoService(
+    profile.config.organizationUrl,
+    session.accessToken,
+    profile.config
+  );
+}
+
+function isHttpsUrl(value: string): boolean {
   try {
-    const config = getExtensionConfig();
-    if (!config) return;
-
-    const session = await vscode.authentication.getSession(
-      "microsoft",
-      ["499b84ac-1321-427f-aa17-267ca6975798/.default"],
-      { createIfNone: true }
-    );
-
-    if (session?.accessToken) {
-      return;
-    }
-  } catch (error) {
-    return;
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
   }
 }
 
+async function getTeamsConfiguration(
+  context: vscode.ExtensionContext
+): Promise<{ configured: boolean; destinationName?: string }> {
+  const webhook = await context.secrets.get(teamsWebhookSecretKey);
+  const destinationName = context.globalState.get<string>(
+    teamsDestinationStateKey
+  );
+  return {
+    configured: Boolean(webhook),
+    ...(destinationName ? { destinationName } : {}),
+  };
+}
+
+async function configureTeamsWebhook(
+  context: vscode.ExtensionContext
+): Promise<{ configured: boolean; destinationName?: string }> {
+  const webhookUrl = await vscode.window.showInputBox({
+    title: "Configure Teams Workflow",
+    prompt:
+      "Paste the URL from the Teams 'When a Teams webhook request is received' workflow trigger.",
+    password: true,
+    ignoreFocusOut: true,
+    validateInput: (value) =>
+      isHttpsUrl(value.trim()) ? undefined : "Enter a valid HTTPS URL.",
+  });
+  if (!webhookUrl) {
+    return getTeamsConfiguration(context);
+  }
+
+  const destinationName = await vscode.window.showInputBox({
+    title: "Name this Teams destination",
+    prompt: "Use a friendly channel or workflow name.",
+    value:
+      context.globalState.get<string>(teamsDestinationStateKey) ??
+      "Release updates",
+    ignoreFocusOut: true,
+    validateInput: (value) =>
+      value.trim() ? undefined : "Enter a destination name.",
+  });
+  if (!destinationName) {
+    return getTeamsConfiguration(context);
+  }
+
+  await context.secrets.store(teamsWebhookSecretKey, webhookUrl.trim());
+  await context.globalState.update(
+    teamsDestinationStateKey,
+    destinationName.trim()
+  );
+  return { configured: true, destinationName: destinationName.trim() };
+}
+
+async function sendTeamsWorkflow(
+  context: vscode.ExtensionContext,
+  request: TeamsShareRequest
+): Promise<void> {
+  const webhook = await context.secrets.get(teamsWebhookSecretKey);
+  if (!webhook) {
+    throw new Error("Configure a Teams Workflow before sending.");
+  }
+  await axios.post(webhook, buildTeamsWorkflowPayload(request), {
+    timeout: 30000,
+    maxBodyLength: 28000,
+    headers: { "Content-Type": "application/json" },
+    validateStatus: (status) => status >= 200 && status < 300,
+  });
+}
+
 export function activate(context: vscode.ExtensionContext) {
+  const profileStore = new ProfileStore(context);
+  const comparisonHistory = new ComparisonHistoryStore(context);
+  const profileInitialization = profileStore.initialize(
+    getLegacyExtensionConfig()
+  );
+  let automationRunning = false;
+  const runAutomations = async () => {
+    if (automationRunning) {
+      return;
+    }
+    automationRunning = true;
+    try {
+      await profileInitialization;
+      const checkpoints =
+        context.globalState.get<
+          Record<string, { checkedAt: number; targetBuildId?: number }>
+        >(automationStateKey) ?? {};
+      for (const profile of profileStore.getSnapshot().profiles) {
+        const automation = profile.automation;
+        if (
+          !automation?.enabled ||
+          !Number.isInteger(automation.intervalMinutes) ||
+          automation.intervalMinutes < 5
+        ) {
+          continue;
+        }
+        const checkpoint = checkpoints[profile.id];
+        const due =
+          !checkpoint ||
+          Date.now() - checkpoint.checkedAt >=
+            automation.intervalMinutes * 60_000;
+        if (!due) {
+          continue;
+        }
+        checkpoints[profile.id] = {
+          checkedAt: Date.now(),
+          ...(checkpoint?.targetBuildId
+            ? { targetBuildId: checkpoint.targetBuildId }
+            : {}),
+        };
+        await context.globalState.update(automationStateKey, checkpoints);
+        try {
+          const service = await createAdoService(profileStore, profile.id);
+          const base = await service.findLatestDeployedRun();
+          if (!base?.finishTime) {
+            continue;
+          }
+          const builds = await service.fetchLastNBuilds(20);
+          const baseTime = new Date(base.finishTime).getTime();
+          const target = builds
+            .filter((build) => {
+              const time = build.finishTime ?? build.startTime;
+              return (
+                build.id !== base.id &&
+                Boolean(build.sourceVersion) &&
+                Boolean(time) &&
+                build.status === "2" &&
+                build.result === "2" &&
+                new Date(time ?? 0).getTime() > baseTime
+              );
+            })
+            .sort(
+              (left, right) =>
+                new Date(right.finishTime ?? right.startTime ?? 0).getTime() -
+                new Date(left.finishTime ?? left.startTime ?? 0).getTime()
+            )[0];
+          if (!target || target.id === checkpoint?.targetBuildId) {
+            continue;
+          }
+          const result = await service.fetchCommitRangeData(base, target);
+          const summary = generateDeterministicSummary(result);
+          await sendTeamsWorkflow(context, {
+            title: `${profile.name}: build ${target.buildNumber}`,
+            comparison: result,
+            summary,
+            mentions: automation.mentionUpns.map((upn) => ({
+              displayName: upn.split("@")[0] ?? upn,
+              userId: upn,
+            })),
+          });
+          await comparisonHistory.add(profile.id, result);
+          checkpoints[profile.id] = {
+            checkedAt: Date.now(),
+            targetBuildId: target.id,
+          };
+          await context.globalState.update(automationStateKey, checkpoints);
+        } catch (error: unknown) {
+          vscode.window.setStatusBarMessage(
+            `Build Compare automation failed for ${profile.name}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            10000
+          );
+        }
+      }
+      await context.globalState.update(automationStateKey, checkpoints);
+    } finally {
+      automationRunning = false;
+    }
+  };
+  const initialAutomationTimer = setTimeout(() => {
+    void runAutomations();
+  }, 15000);
+  const automationTimer = setInterval(() => {
+    void runAutomations();
+  }, 60000);
+  context.subscriptions.push({
+    dispose: () => {
+      clearTimeout(initialAutomationTimer);
+      clearInterval(automationTimer);
+    },
+  });
   const viewProvider = new BuildCompareViewProvider(context);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -111,7 +320,60 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  loadCompareBuildsByDefault();
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.setupProfile",
+      async () => {
+        await profileInitialization;
+        const profile = await runSmartOnboarding(profileStore);
+        if (profile) {
+          currentPanel?.webview.postMessage({ command: "profilesChanged" });
+          vscode.window.showInformationMessage(
+            `Pipeline profile "${profile.name}" is ready.`
+          );
+        }
+      }
+    ),
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.switchProfile",
+      async () => {
+        await profileInitialization;
+        const profile = await pickActiveProfile(profileStore);
+        if (profile) {
+          currentPanel?.webview.postMessage({ command: "profilesChanged" });
+        }
+      }
+    ),
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.deleteProfile",
+      async () => {
+        await profileInitialization;
+        const before = new Set(
+          profileStore.getSnapshot().profiles.map((profile) => profile.id)
+        );
+        await deletePipelineProfile(profileStore);
+        const after = new Set(
+          profileStore.getSnapshot().profiles.map((profile) => profile.id)
+        );
+        for (const profileId of before) {
+          if (!after.has(profileId)) {
+            await comparisonHistory.clear(profileId);
+          }
+        }
+        currentPanel?.webview.postMessage({ command: "profilesChanged" });
+      }
+    ),
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.editProfile",
+      async () => {
+        await profileInitialization;
+        const profile = await editPipelineProfile(profileStore);
+        if (profile) {
+          currentPanel?.webview.postMessage({ command: "profilesChanged" });
+        }
+      }
+    )
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("fe-ninja-tools.openSettings", () => {
@@ -120,6 +382,20 @@ export function activate(context: vscode.ExtensionContext) {
         "buildCompareTools"
       );
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fe-ninja-tools.configureTeams",
+      async () => {
+        const result = await configureTeamsWebhook(context);
+        if (result.configured) {
+          vscode.window.showInformationMessage(
+            `Teams destination "${result.destinationName ?? "configured workflow"}" is ready.`
+          );
+        }
+      }
+    )
   );
 
   context.subscriptions.push(
@@ -165,18 +441,17 @@ export function activate(context: vscode.ExtensionContext) {
       currentPanel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {
-            case "getTokenAndConfig": {
+            case "openSettings": {
+              await vscode.commands.executeCommand(
+                "workbench.action.openSettings",
+                "buildCompareTools"
+              );
+              return;
+            }
+            case "getAuthAndConfig": {
               try {
-                const config = getExtensionConfig();
-                if (!config) {
-                  currentPanel?.webview.postMessage({
-                    command: "tokenAndConfigResponse",
-                    token: null,
-                    config: null,
-                    error: "Configuration missing",
-                  });
-                  return;
-                }
+                await profileInitialization;
+                const snapshot = profileStore.getSnapshot();
 
                 const session = await vscode.authentication.getSession(
                   "microsoft",
@@ -185,56 +460,110 @@ export function activate(context: vscode.ExtensionContext) {
                 );
 
                 currentPanel?.webview.postMessage({
-                  command: "tokenAndConfigResponse",
-                  token: session?.accessToken,
-                  config: config,
+                  command: "authAndConfigResponse",
+                  authenticated: Boolean(session?.accessToken),
+                  config: snapshot.activeProfile?.config ?? null,
+                  profile: snapshot.activeProfile,
+                  profiles: snapshot.profiles,
+                  needsOnboarding: !snapshot.activeProfile,
                 });
               } catch (error) {
                 vscode.window.showErrorMessage(
                   "Failed to get authentication token."
                 );
                 currentPanel?.webview.postMessage({
-                  command: "tokenAndConfigResponse",
-                  token: null,
+                  command: "authAndConfigResponse",
                   config: null,
                   error: "Failed to get token",
                 });
               }
               return;
             }
-            case "getCurrentBranch": {
-              const workspaceFolder =
-                vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-              if (!workspaceFolder) {
-                currentPanel?.webview.postMessage({
-                  command: "currentBranchResponse",
-                  branch: null,
-                  error: "Could not determine workspace folder.",
-                });
-                return;
-              }
-              exec(
-                "git rev-parse --abbrev-ref HEAD",
-                { cwd: workspaceFolder },
-                (error, stdout, stderr) => {
-                  if (error) {
-                    currentPanel?.webview.postMessage({
-                      command: "currentBranchResponse",
-                      branch: null,
-                      error: `Failed to get current branch: ${
-                        stderr || error.message
-                      }`,
-                    });
-                    return;
-                  }
-                  const branchName = stdout.trim();
-                  const fullRefName = `refs/heads/${branchName}`;
+            case "runSmartOnboarding": {
+                try {
+                  await profileInitialization;
+                  await runSmartOnboarding(profileStore);
                   currentPanel?.webview.postMessage({
-                    command: "currentBranchResponse",
-                    branch: fullRefName,
+                    command: "runSmartOnboardingResponse",
+                    requestId: message.requestId,
+                    result: profileStore.getSnapshot(),
+                  });
+                } catch (error: any) {
+                  currentPanel?.webview.postMessage({
+                    command: "runSmartOnboardingResponse",
+                    requestId: message.requestId,
+                    error: error.message || "Could not complete setup.",
                   });
                 }
-              );
+                return;
+            }
+            case "switchPipelineProfile": {
+                try {
+                  await profileInitialization;
+                  await pickActiveProfile(profileStore);
+                  currentPanel?.webview.postMessage({
+                    command: "switchPipelineProfileResponse",
+                    requestId: message.requestId,
+                    result: profileStore.getSnapshot(),
+                  });
+                } catch (error: any) {
+                  currentPanel?.webview.postMessage({
+                    command: "switchPipelineProfileResponse",
+                    requestId: message.requestId,
+                    error: error.message || "Could not switch profiles.",
+                  });
+                }
+                return;
+            }
+            case "deletePipelineProfile": {
+                try {
+                  await profileInitialization;
+                  const before = new Set(
+                    profileStore
+                      .getSnapshot()
+                      .profiles.map((profile) => profile.id)
+                  );
+                  await deletePipelineProfile(profileStore);
+                  const after = new Set(
+                    profileStore
+                      .getSnapshot()
+                      .profiles.map((profile) => profile.id)
+                  );
+                  for (const profileId of before) {
+                    if (!after.has(profileId)) {
+                      await comparisonHistory.clear(profileId);
+                    }
+                  }
+                  currentPanel?.webview.postMessage({
+                    command: "deletePipelineProfileResponse",
+                    requestId: message.requestId,
+                    result: profileStore.getSnapshot(),
+                  });
+                } catch (error: any) {
+                  currentPanel?.webview.postMessage({
+                    command: "deletePipelineProfileResponse",
+                    requestId: message.requestId,
+                    error: error.message || "Could not delete the profile.",
+                  });
+              }
+              return;
+            }
+            case "editPipelineProfile": {
+              try {
+                await profileInitialization;
+                await editPipelineProfile(profileStore);
+                currentPanel?.webview.postMessage({
+                  command: "editPipelineProfileResponse",
+                  requestId: message.requestId,
+                  result: profileStore.getSnapshot(),
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "editPipelineProfileResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Could not edit the profile.",
+                });
+              }
               return;
             }
             case "getTheme": {
@@ -247,43 +576,11 @@ export function activate(context: vscode.ExtensionContext) {
               });
               return;
             }
-            case "openFileAtLine": {
-              const { filePath, line } = message;
-              const workspaceFolderUri =
-                vscode.workspace.workspaceFolders?.[0]?.uri;
-              if (!workspaceFolderUri) return;
-              const absFileUri = vscode.Uri.joinPath(
-                workspaceFolderUri,
-                filePath
-              );
-              try {
-                const doc = await vscode.workspace.openTextDocument(absFileUri);
-                const editor = await vscode.window.showTextDocument(doc, {
-                  preview: false,
-                });
-                const pos = new vscode.Position(
-                  Math.max(0, (line || 1) - 1),
-                  0
-                );
-                editor.revealRange(
-                  new vscode.Range(pos, pos),
-                  vscode.TextEditorRevealType.InCenter
-                );
-                editor.selection = new vscode.Selection(pos, pos);
-              } catch (e) {
-                vscode.window.showErrorMessage(
-                  `Could not open file: ${filePath}`
-                );
-              }
-              return;
-            }
             case "findLatestDeployedRun": {
               try {
-                const { accessToken, config } = message;
-                const adoService = new AdoService(
-                  config.organizationUrl,
-                  accessToken,
-                  config
+                const adoService = await createAdoService(
+                  profileStore,
+                  message.profileId
                 );
                 const result = await adoService.findLatestDeployedRun();
                 currentPanel?.webview.postMessage({
@@ -302,11 +599,10 @@ export function activate(context: vscode.ExtensionContext) {
             }
             case "fetchLastNBuilds": {
               try {
-                const { accessToken, count, config } = message;
-                const adoService = new AdoService(
-                  config.organizationUrl,
-                  accessToken,
-                  config
+                const { count } = message;
+                const adoService = await createAdoService(
+                  profileStore,
+                  message.profileId
                 );
                 const result = await adoService.fetchLastNBuilds(count);
                 currentPanel?.webview.postMessage({
@@ -325,17 +621,16 @@ export function activate(context: vscode.ExtensionContext) {
             }
             case "fetchCommitRangeData": {
               try {
-                const { accessToken, olderRun, selectedBuild, config } =
-                  message;
-                const adoService = new AdoService(
-                  config.organizationUrl,
-                  accessToken,
-                  config
+                const { olderRun, selectedBuild } = message;
+                const adoService = await createAdoService(
+                  profileStore,
+                  message.profileId
                 );
                 const result = await adoService.fetchCommitRangeData(
                   olderRun,
                   selectedBuild
                 );
+                await comparisonHistory.add(message.profileId, result);
                 currentPanel?.webview.postMessage({
                   command: "fetchCommitRangeDataResponse",
                   requestId: message.requestId,
@@ -350,27 +645,316 @@ export function activate(context: vscode.ExtensionContext) {
               }
               return;
             }
-            case "getActivePullRequestForBranch": {
+            case "getComparisonHistory": {
+              currentPanel?.webview.postMessage({
+                command: "getComparisonHistoryResponse",
+                requestId: message.requestId,
+                result: comparisonHistory.get(message.profileId),
+              });
+              return;
+            }
+            case "getGitReferences": {
               try {
-                const { accessToken, branchName, config } = message;
-                const adoService = new AdoService(
-                  config.organizationUrl,
-                  accessToken,
-                  config
-                );
-                const result = await adoService.getActivePullRequestForBranch(
-                  branchName
+                const adoService = await createAdoService(
+                  profileStore,
+                  message.profileId
                 );
                 currentPanel?.webview.postMessage({
-                  command: "getActivePullRequestForBranchResponse",
+                  command: "getGitReferencesResponse",
+                  requestId: message.requestId,
+                  result: await adoService.getGitReferences(),
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "getGitReferencesResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Could not load Git references.",
+                });
+              }
+              return;
+            }
+            case "compareGitReferences": {
+              try {
+                const adoService = await createAdoService(
+                  profileStore,
+                  message.profileId
+                );
+                const baseRun = {
+                  id: -1,
+                  buildNumber: `${message.base.kind}: ${message.base.displayName}`,
+                  sourceVersion: message.base.commitId,
+                };
+                const targetRun = {
+                  id: -2,
+                  buildNumber: `${message.target.kind}: ${message.target.displayName}`,
+                  sourceVersion: message.target.commitId,
+                };
+                const result = await adoService.fetchCommitRangeData(
+                  baseRun,
+                  targetRun
+                );
+                await comparisonHistory.add(message.profileId, result);
+                currentPanel?.webview.postMessage({
+                  command: "compareGitReferencesResponse",
+                  requestId: message.requestId,
+                  result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "compareGitReferencesResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Could not compare Git references.",
+                });
+              }
+              return;
+            }
+            case "compareProfileEnvironments": {
+              try {
+                const baseProfile = profileStore.getProfile(
+                  message.baseProfileId
+                );
+                const targetProfile = profileStore.getProfile(
+                  message.targetProfileId
+                );
+                if (!baseProfile || !targetProfile) {
+                  throw new Error("One of the selected profiles no longer exists.");
+                }
+                const baseConfig = baseProfile.config;
+                const targetConfig = targetProfile.config;
+                if (
+                  baseConfig.organizationUrl !== targetConfig.organizationUrl ||
+                  baseConfig.projectName !== targetConfig.projectName ||
+                  baseConfig.repositoryId !== targetConfig.repositoryId
+                ) {
+                  throw new Error(
+                    "Environment drift requires profiles for the same organization, project, and repository."
+                  );
+                }
+                const [baseService, targetService] = await Promise.all([
+                  createAdoService(profileStore, baseProfile.id),
+                  createAdoService(profileStore, targetProfile.id),
+                ]);
+                const [baseRun, targetRun] = await Promise.all([
+                  baseService.findLatestDeployedRun(),
+                  targetService.findLatestDeployedRun(),
+                ]);
+                if (!baseRun || !targetRun) {
+                  throw new Error(
+                    "A successful deployment was not found for both environments."
+                  );
+                }
+                const result = await targetService.fetchCommitRangeData(
+                  baseRun,
+                  targetRun
+                );
+                await comparisonHistory.add(targetProfile.id, result);
+                currentPanel?.webview.postMessage({
+                  command: "compareProfileEnvironmentsResponse",
+                  requestId: message.requestId,
+                  result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "compareProfileEnvironmentsResponse",
+                  requestId: message.requestId,
+                  error:
+                    error.message || "Could not compare profile environments.",
+                });
+              }
+              return;
+            }
+            case "clearComparisonHistory": {
+              await comparisonHistory.clear(message.profileId);
+              currentPanel?.webview.postMessage({
+                command: "clearComparisonHistoryResponse",
+                requestId: message.requestId,
+                result: null,
+              });
+              return;
+            }
+            case "exportComparison": {
+              try {
+                const format = message.format as ExportFormat;
+                if (format !== "markdown" && format !== "json") {
+                  throw new Error("Unsupported export format.");
+                }
+                const content = formatComparisonExport(
+                  message.result,
+                  format,
+                  message.summary
+                );
+                const extension = format === "markdown" ? "md" : "json";
+                const target = await vscode.window.showSaveDialog({
+                  title: "Export deployment comparison",
+                  filters:
+                    format === "markdown"
+                      ? { Markdown: ["md"] }
+                      : { JSON: ["json"] },
+                  defaultUri: vscode.Uri.file(
+                    `deployment-comparison-${Date.now()}.${extension}`
+                  ),
+                });
+                if (target) {
+                  await vscode.workspace.fs.writeFile(
+                    target,
+                    new TextEncoder().encode(content)
+                  );
+                }
+                currentPanel?.webview.postMessage({
+                  command: "exportComparisonResponse",
+                  requestId: message.requestId,
+                  result: target?.toString() ?? null,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "exportComparisonResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Could not export the comparison.",
+                });
+              }
+              return;
+            }
+            case "createComparisonWorkItem": {
+              try {
+                const confirmation = await vscode.window.showWarningMessage(
+                  `Create a ${message.workItemType} in Azure DevOps?`,
+                  { modal: true },
+                  "Create"
+                );
+                if (confirmation !== "Create") {
+                  throw new Error("Work item creation was cancelled.");
+                }
+                const adoService = await createAdoService(
+                  profileStore,
+                  message.profileId
+                );
+                const result = await adoService.createComparisonWorkItem(
+                  message.result,
+                  message.title,
+                  message.workItemType,
+                  message.summary
+                );
+                currentPanel?.webview.postMessage({
+                  command: "createComparisonWorkItemResponse",
+                  requestId: message.requestId,
+                  result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "createComparisonWorkItemResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Could not create the work item.",
+                });
+              }
+              return;
+            }
+            case "generateAiSummary": {
+              try {
+                const summary = await vscode.window.withProgress(
+                  {
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Generating deployment summary with Copilot...",
+                    cancellable: true,
+                  },
+                  async (_progress, token) => {
+                    const models = await vscode.lm.selectChatModels({
+                      vendor: "copilot",
+                    });
+                    const model = models[0];
+                    if (!model) {
+                      throw new Error(
+                        "No Copilot language model is available. Enable GitHub Copilot Chat and sign in."
+                      );
+                    }
+                    const response = await model.sendRequest(
+                      [
+                        vscode.LanguageModelChatMessage.User(
+                          buildAiSummaryPrompt(message.result)
+                        ),
+                      ],
+                      {},
+                      token
+                    );
+                    let text = "";
+                    for await (const fragment of response.text) {
+                      if (token.isCancellationRequested) {
+                        throw new vscode.CancellationError();
+                      }
+                      text += fragment;
+                    }
+                    return text.trim();
+                  }
+                );
+                currentPanel?.webview.postMessage({
+                  command: "generateAiSummaryResponse",
+                  requestId: message.requestId,
+                  result: summary,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "generateAiSummaryResponse",
+                  requestId: message.requestId,
+                  error:
+                    error instanceof vscode.CancellationError
+                      ? "Summary generation was cancelled."
+                      : error.message || "Could not generate the summary.",
+                });
+              }
+              return;
+            }
+            case "getTeamsConfiguration": {
+              try {
+                const result = await getTeamsConfiguration(context);
+                currentPanel?.webview.postMessage({
+                  command: "getTeamsConfigurationResponse",
                   requestId: message.requestId,
                   result: result,
                 });
               } catch (error: any) {
                 currentPanel?.webview.postMessage({
-                  command: "getActivePullRequestForBranchResponse",
+                  command: "getTeamsConfigurationResponse",
                   requestId: message.requestId,
                   error: error.message || "Unknown error",
+                });
+              }
+              return;
+            }
+            case "configureTeamsWebhook": {
+              try {
+                const result = await configureTeamsWebhook(context);
+                currentPanel?.webview.postMessage({
+                  command: "configureTeamsWebhookResponse",
+                  requestId: message.requestId,
+                  result,
+                });
+              } catch (error: any) {
+                currentPanel?.webview.postMessage({
+                  command: "configureTeamsWebhookResponse",
+                  requestId: message.requestId,
+                  error: error.message || "Could not configure Teams.",
+                });
+              }
+              return;
+            }
+            case "sendTeamsComparison": {
+              try {
+                const request = message.request as TeamsShareRequest;
+                await sendTeamsWorkflow(context, request);
+                currentPanel?.webview.postMessage({
+                  command: "sendTeamsComparisonResponse",
+                  requestId: message.requestId,
+                  result: null,
+                });
+              } catch (error: any) {
+                const detail = axios.isAxiosError(error)
+                  ? `Teams Workflow returned ${
+                      error.response?.status ?? error.code ?? "an error"
+                    }.`
+                  : error.message || "Could not send the Teams message.";
+                currentPanel?.webview.postMessage({
+                  command: "sendTeamsComparisonResponse",
+                  requestId: message.requestId,
+                  error: detail,
                 });
               }
               return;
@@ -440,7 +1024,7 @@ function getWebviewContent(
   );
   const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
   const nonce = getNonce();
-  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https:; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} https: data:; connect-src *;">\n            <title>Build Compare Tools UI Report</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
+  return `<!DOCTYPE html>\n        <html lang="en">\n        <head>\n            <meta charset="UTF-8">\n            <meta name="viewport" content="width=device-width, initial-scale=1.0">\n              <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;">\n            <title>Build Compare Tools</title>\n        </head>\n        <body>\n            <div id="root"></div>\n            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>\n        </body>\n        </html>`;
 }
 
 function getNonce() {

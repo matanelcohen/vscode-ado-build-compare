@@ -23,9 +23,11 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    # Skip linting for now due to existing code issues
-    # - name: Run ESLint
-    #   run: npm run lint:ci --if-present
+    - name: Run tests
+      run: npm test
+
+    - name: Run ESLint
+      run: npm run lint:ci
 
     - name: Run TypeScript check
       run: npx tsc --noEmit

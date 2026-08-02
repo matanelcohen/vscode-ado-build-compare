@@ -1,26 +1,23 @@
-import React from 'react';
+import * as React from "react";
 import {
-  Card,
-  Text,
-  makeStyles,
-  shorthands,
-  tokens,
-  Divider,
+  Badge,
   Body1,
   Caption1,
+  Card,
+  Divider,
+  Input,
+  Link,
+  makeStyles,
+  shorthands,
+  Text,
   Title3,
-  Link, // Import Link
+  tokens,
 } from "@fluentui/react-components";
-
-interface Commit {
-  message: string;
-  // Add other properties if needed
-}
+import { SearchRegular } from "@fluentui/react-icons";
+import { ComparisonResult } from "../../models/comparison";
 
 interface CommitComparisonResultsProps {
-  committerMap: { [committer: string]: (string | Commit)[] } | null;
-  loading: boolean; // Note: Loading state is not handled in this component's render logic
-  error: string | null;
+  result: ComparisonResult;
 }
 
 const useStyles = makeStyles({
@@ -30,132 +27,205 @@ const useStyles = makeStyles({
     flexDirection: "column",
     rowGap: tokens.spacingVerticalL,
   },
-  title: {
-    // ...comparisonStyles.deploymentTitle, // Adapt or replace
+  metrics: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: tokens.spacingHorizontalM,
   },
-  error: {
-    color: tokens.colorPaletteRedForeground1,
+  metric: {
+    ...shorthands.padding(tokens.spacingVerticalM),
+    backgroundColor: tokens.colorNeutralBackground2,
+    ...shorthands.borderRadius(tokens.borderRadiusMedium),
   },
-  committerGroup: {
-    display: "flex",
-    flexDirection: "column",
-    rowGap: tokens.spacingVerticalS,
-  },
-  committerName: {
+  metricValue: {
+    display: "block",
+    fontSize: tokens.fontSizeHero700,
     fontWeight: tokens.fontWeightSemibold,
   },
-  commitList: {
+  list: {
     display: "flex",
     flexDirection: "column",
-    rowGap: tokens.spacingVerticalS, // Increased gap slightly
-    paddingLeft: tokens.spacingHorizontalM,
+    rowGap: tokens.spacingVerticalM,
   },
-  commitItem: {
+  item: {
     display: "flex",
-    flexDirection: "column", // Stack elements vertically
-    gap: tokens.spacingVerticalXS,
+    flexDirection: "column",
+    rowGap: tokens.spacingVerticalXS,
   },
-  commitMessageText: {
-    // Style for the main commit message part
-    color: "var(--vscode-foreground)", // Use standard foreground
+  itemHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+    flexWrap: "wrap",
   },
-  prLink: {
-    // Style for the PR link
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorBrandForegroundLink,
-    textDecorationLine: "none",
-    ":hover": {
-      textDecorationLine: "underline",
-    },
+  metadata: {
+    color: tokens.colorNeutralForeground3,
   },
-  prNumber: {
-    fontWeight: tokens.fontWeightSemibold,
-    marginRight: tokens.spacingHorizontalXS,
+  files: {
+    color: tokens.colorNeutralForeground3,
+    fontFamily: tokens.fontFamilyMonospace,
   },
-  pathFilterNote: {
-    color: tokens.colorNeutralForeground3, // Use a less prominent color
-    marginTop: tokens.spacingVerticalM,
+  empty: {
+    textAlign: "center",
+    ...shorthands.padding(tokens.spacingVerticalXXL),
+    backgroundColor: tokens.colorNeutralBackground2,
+    ...shorthands.borderRadius(tokens.borderRadiusMedium),
   },
-  divider: {
-    marginTop: tokens.spacingVerticalM,
-    marginBottom: tokens.spacingVerticalM,
+  warning: {
+    color: tokens.colorPaletteDarkOrangeForeground1,
+  },
+  risk: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalS,
+    ...shorthands.padding(tokens.spacingVerticalM),
+    backgroundColor: tokens.colorNeutralBackground2,
+    ...shorthands.borderRadius(tokens.borderRadiusMedium),
+  },
+  riskHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
   },
 });
 
-// Helper function to parse the commit string
-const parseCommitString = (commitString: string) => {
-  const prRegex = /# PR (\d+) Message: (.*?)\s*-\s*<a href="(.*?)"/;
-  const match = commitString.match(prRegex);
-
-  if (match) {
-    return {
-      prNumber: match[1],
-      message: match[2] ? match[2].trim() : "",
-      link: match[3],
-    };
-  }
-  // Fallback if parsing fails
-  return { prNumber: null, message: commitString, link: null };
-};
-
-export const CommitComparisonResults: React.FC<CommitComparisonResultsProps> = ({
-  committerMap,
-  loading,
-  error,
-}) => {
+export const CommitComparisonResults: React.FC<
+  CommitComparisonResultsProps
+> = ({ result }) => {
   const styles = useStyles();
-
-  if (error) {
-    return (
-      <Card className={styles.card}>
-        <Text className={styles.error}>Error comparing commits: {error}</Text>
-      </Card>
-    );
-  }
-
-  if (loading || !committerMap || Object.keys(committerMap).length === 0) {
-    return null;
-  }
+  const [query, setQuery] = React.useState("");
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const visibleCommits = result.commits.filter((commit) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+    return [
+      commit.message,
+      commit.author.displayName,
+      commit.pullRequest?.title,
+      commit.pullRequest?.id.toString(),
+      ...commit.files.map((file) => file.path),
+    ].some((value) => value?.toLocaleLowerCase().includes(normalizedQuery));
+  });
 
   return (
     <Card className={styles.card}>
-      <Title3 className={styles.title}>Comparison Results</Title3>
-      {Object.entries(committerMap).map(([committer, commits], index) => (
-        <React.Fragment key={committer}>
-          {index > 0 && <Divider className={styles.divider} />}
-          <div className={styles.committerGroup}>
-            <Body1 className={styles.committerName}>
-              {committer} ({commits.length}{" "}
-              {commits.length === 1 ? "commit" : "commits"})
-            </Body1>
-            <div className={styles.commitList}>
-              {commits.map((commit, idx) => {
-                // Ensure commit is a string before parsing
-                const commitStr = typeof commit === 'string' ? commit : (commit as any).message || '';
-                const { prNumber, message, link } = parseCommitString(commitStr);
+      <Title3>Comparison summary</Title3>
+      <div className={styles.metrics}>
+        {[
+          ["Pull requests", result.pullRequests.length],
+          ["Commits", result.commits.length],
+          ["Changed files", result.files.length],
+          ["Contributors", result.contributors.length],
+        ].map(([label, value]) => (
+          <div className={styles.metric} key={label}>
+            <Text className={styles.metricValue}>{value}</Text>
+            <Caption1>{label}</Caption1>
+          </div>
+        ))}
+      </div>
+      <div className={styles.risk}>
+        <div className={styles.riskHeader}>
+          <Text weight="semibold">Release risk</Text>
+          <Badge
+            appearance="filled"
+            color={
+              result.risk.level === "low"
+                ? "success"
+                : result.risk.level === "medium"
+                  ? "warning"
+                  : "danger"
+            }
+          >
+            {result.risk.level.toLocaleUpperCase()} · {result.risk.score}/100
+          </Badge>
+        </div>
+        {result.risk.signals.length === 0 ? (
+          <Caption1>No sensitive change patterns detected.</Caption1>
+        ) : (
+          result.risk.signals.map((signal) => (
+            <Caption1 key={signal.id}>
+              <strong>{signal.label}:</strong> {signal.description}
+            </Caption1>
+          ))
+        )}
+      </div>
 
-                return (
-                  <div key={idx} className={styles.commitItem}>
-                    <Text className={styles.commitMessageText}>
-                      {prNumber && <span className={styles.prNumber}>PR #{prNumber}:</span>}
-                      {message}
-                    </Text>
-                    {link && (
-                      <Link href={link} target="_blank" rel="noreferrer" className={styles.prLink}>
-                        View PR #{prNumber}
+      {result.pathFilters.length > 0 && (
+        <Caption1>
+          Filtered to: {result.pathFilters.map((path) => `\`${path}\``).join(", ")}
+        </Caption1>
+      )}
+
+      {result.commits.length > 0 ? (
+        <>
+          <Input
+            contentBefore={<SearchRegular />}
+            value={query}
+            onChange={(_, data) => setQuery(data.value)}
+            placeholder="Filter by PR, contributor, message, or file"
+            aria-label="Filter comparison results"
+          />
+          <div className={styles.list}>
+            {visibleCommits.map((commit, index) => (
+              <React.Fragment key={commit.id}>
+                {index > 0 && <Divider />}
+                <div className={styles.item}>
+                  <div className={styles.itemHeader}>
+                    {commit.pullRequest ? (
+                      <Link
+                        href={commit.pullRequest.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        PR #{commit.pullRequest.id}: {commit.pullRequest.title}
                       </Link>
+                    ) : (
+                      <>
+                        <Badge appearance="outline">Direct commit</Badge>
+                        <Body1>{commit.message.split("\n")[0]}</Body1>
+                      </>
                     )}
                   </div>
-                );
-              })}
-            </div>
+                  <Caption1 className={styles.metadata}>
+                    {commit.author.displayName} · {commit.id.slice(0, 7)} ·{" "}
+                    {commit.files.length} changed{" "}
+                    {commit.files.length === 1 ? "file" : "files"}
+                  </Caption1>
+                  {commit.files.length > 0 && (
+                    <Caption1 className={styles.files}>
+                      {commit.files
+                        .slice(0, 4)
+                        .map((file) => file.path)
+                        .join(" · ")}
+                      {commit.files.length > 4
+                        ? ` · +${commit.files.length - 4} more`
+                        : ""}
+                    </Caption1>
+                  )}
+                </div>
+              </React.Fragment>
+            ))}
+            {visibleCommits.length === 0 && (
+              <div className={styles.empty}>No changes match this filter.</div>
+            )}
           </div>
-        </React.Fragment>
+        </>
+      ) : (
+        <div className={styles.empty}>
+          <Title3>No relevant changes</Title3>
+          <Body1>
+            The builds differ, but no commits matched the configured path
+            filters.
+          </Body1>
+        </div>
+      )}
+
+      {result.warnings.map((warning) => (
+        <Caption1 className={styles.warning} key={warning}>
+          {warning}
+        </Caption1>
       ))}
-      <Caption1 className={styles.pathFilterNote}>
-        Note: Only showing commits that modified relevant files based on the
-        configured path filter.
-      </Caption1>
     </Card>
   );
 };

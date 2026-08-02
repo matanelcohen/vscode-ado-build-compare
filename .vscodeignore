@@ -7,13 +7,6 @@ tsconfig.json
 
 # Node modules (except production dependencies)
 node_modules/**
-!node_modules/@fluentui/**
-!node_modules/react/**
-!node_modules/react-dom/**
-!node_modules/react-router-dom/**
-!node_modules/react-markdown/**
-!node_modules/react-syntax-highlighter/**
-!node_modules/axios/**
 
 # Development files
 .gitignore
@@ -21,6 +14,7 @@ node_modules/**
 README.md
 CHANGELOG.md
 *.md
+**/*.md
 *.map
 *.log
 
@@ -44,7 +38,16 @@ src/BuildSelector.tsx
 .editorconfig
 jest.config.js
 webpack.config.js
+webpack.webview.config.js
 rollup.config.js
+
+# Repository-only content
+.github/**
+docs/**
+scripts/**
+media/logo.png
+media/logo.svg
+media/ICON_SETUP.md
 
 # Package files
 package-lock.json

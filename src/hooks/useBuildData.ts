@@ -7,21 +7,26 @@ import {
 } from "../api-sdk";
 
 export function useBuildData(
-  accessToken: string | null,
+  profileId: string | null,
   config: AdcPipelineViewerConfig | null
 ): {
   olderRun: PipelineRun | null;
   builds: PipelineRun[];
   loading: boolean;
   error: string | null;
+  refresh: () => void;
 } {
   const [olderRun, setOlderRun] = React.useState<PipelineRun | null>(null);
   const [builds, setBuilds] = React.useState<PipelineRun[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = React.useState(0);
+  const refresh = React.useCallback(() => {
+    setRefreshKey((value) => value + 1);
+  }, []);
 
   React.useEffect(() => {
-    if (!accessToken || !config) {
+    if (!profileId || !config) {
       setLoading(false);
       return;
     }
@@ -30,44 +35,62 @@ export function useBuildData(
     setError(null);
     setOlderRun(null);
     setBuilds([]);
+    let cancelled = false;
 
     (async () => {
       try {
-        const latest = await findLatestDeployedRun(accessToken, config);
+        const latest = await findLatestDeployedRun(profileId);
 
         if (!latest) {
-          setError(
-            `No successful deployment found for pipeline ${config.pipelineDefinitionId} with target stage "${config.targetStageName}". Check if there are any completed successful deployments.`
-          );
-          setLoading(false);
+          if (!cancelled) {
+            setError(
+              `No successful deployment found for pipeline ${config.pipelineDefinitionId} with target stage "${config.targetStageName}". Check if there are any completed successful deployments.`
+            );
+          }
           return;
         }
 
         if (!latest.finishTime) {
-          setError(
-            `Found deployment (ID: ${latest.id}) but it lacks a finish time. This deployment may still be running or have incomplete data.`
-          );
-          setLoading(false);
+          if (!cancelled) {
+            setError(
+              `Found deployment (ID: ${latest.id}) but it lacks a finish time. This deployment may still be running or have incomplete data.`
+            );
+          }
+          return;
+        }
+        if (cancelled) {
           return;
         }
         setOlderRun(latest);
 
-        const buildList = await fetchLastNBuilds(accessToken, 30, config);
+        const buildList = await fetchLastNBuilds(30, profileId);
 
-        const newerBuilds = buildList.filter((b) => {
-          return (
-            b.id !== latest.id
+        const availableBuilds = buildList.filter(
+          (build) => build.id !== latest.id && Boolean(build.sourceVersion)
+        );
+
+        if (!cancelled) {
+          setBuilds(availableBuilds);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(
+            `Could not load pipeline data: ${
+              err instanceof Error ? err.message : String(err)
+            }`
           );
-        });
-
-        setBuilds(newerBuilds);
-      } catch (err: any) {
-        setError(`Error fetching build data: ${err.message || err}`);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     })();
-  }, [accessToken, config]);
 
-  return { olderRun, builds, loading, error };
+    return () => {
+      cancelled = true;
+    };
+  }, [profileId, config, refreshKey]);
+
+  return { olderRun, builds, loading, error, refresh };
 }

@@ -1,9 +1,10 @@
 const path = require('path');
+const isProduction = process.argv.includes('production');
 
 /** @type {import('webpack').Configuration} */
 const webviewConfig = {
   target: 'web',
-  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  mode: isProduction ? 'production' : 'development',
   entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'out'),
@@ -34,15 +35,15 @@ const webviewConfig = {
       }
     ]
   },
-  devtool: process.env.NODE_ENV === 'production' ? false : 'nosources-source-map',
+  devtool: isProduction ? false : 'nosources-source-map',
   optimization: {
     usedExports: true,
     sideEffects: false,
-    minimize: process.env.NODE_ENV === 'production',
+    minimize: isProduction,
     splitChunks: false, // Keep everything in one file for simplicity
   },
   performance: {
-    hints: process.env.NODE_ENV === 'production' ? 'warning' : false,
+    hints: isProduction ? 'warning' : false,
     maxAssetSize: 2048000, // 2MB
     maxEntrypointSize: 2048000 // 2MB
   }

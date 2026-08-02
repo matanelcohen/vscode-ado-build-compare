@@ -1,9 +1,10 @@
 const path = require('path');
+const isProduction = process.argv.includes('production');
 
 /** @type {import('webpack').Configuration} */
 const config = {
   target: 'node',
-  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  mode: isProduction ? 'production' : 'development',
   entry: './src/extension.ts',
   output: {
     path: path.resolve(__dirname, 'out'),
@@ -37,20 +38,20 @@ const config = {
       }
     ]
   },
-  devtool: process.env.NODE_ENV === 'production' ? false : 'nosources-source-map',
+  devtool: isProduction ? false : 'nosources-source-map',
   infrastructureLogging: {
     level: "warn"
   },
-  plugins: process.env.NODE_ENV === 'production' ? [
+  plugins: isProduction ? [
     new (require('webpack').optimize.ModuleConcatenationPlugin)()
   ] : [],
   optimization: {
     usedExports: true,
     sideEffects: false,
-    minimize: process.env.NODE_ENV === 'production'
+    minimize: isProduction
   },
   performance: {
-    hints: process.env.NODE_ENV === 'production' ? 'warning' : false,
+    hints: isProduction ? 'warning' : false,
     maxAssetSize: 250000,
     maxEntrypointSize: 250000
   }

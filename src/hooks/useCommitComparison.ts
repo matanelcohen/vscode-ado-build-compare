@@ -1,62 +1,81 @@
 import * as React from "react";
 import { PipelineRun } from "../api-sdk";
-import { fetchCommitRangeData, AdcPipelineViewerConfig } from "../api-sdk";
+import { fetchCommitRangeData } from "../api-sdk";
+import { ComparisonResult } from "../models/comparison";
 
 export function useCommitComparison(): {
-  committerMap: { [committer: string]: string[] } | null;
+  result: ComparisonResult | null;
   loading: boolean;
   error: string | null;
   compareCommits: (
-    accessToken: string,
     olderRun: PipelineRun,
     selectedBuild: PipelineRun,
-    config: AdcPipelineViewerConfig
+    profileId: string
   ) => Promise<void>;
   resetComparison: () => void;
+  loadComparison: (comparison: ComparisonResult) => void;
 } {
-  const [committerMap, setCommitterMap] = React.useState<{
-    [committer: string]: string[];
-  } | null>(null);
+  const [result, setResult] = React.useState<ComparisonResult | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const generation = React.useRef(0);
 
   const compareCommits = React.useCallback(
     async (
-      accessToken: string,
       olderRun: PipelineRun,
       selectedBuild: PipelineRun,
-      config: AdcPipelineViewerConfig
+      profileId: string
     ) => {
+      const requestGeneration = ++generation.current;
       setLoading(true);
       setError(null);
-      setCommitterMap(null);
+      setResult(null);
       try {
-        const { committerMap: map, error: apiError } =
-          await fetchCommitRangeData(
-            accessToken,
-            olderRun,
-            selectedBuild,
-            config
-          );
-        if (apiError) {
-          setError(apiError);
-        } else {
-          setCommitterMap(map);
+        const comparison = await fetchCommitRangeData(
+          olderRun,
+          selectedBuild,
+          profileId
+        );
+        if (generation.current === requestGeneration) {
+          setResult(comparison);
         }
-      } catch (err: any) {
-        setError(`Error fetching commit data: ${err.message || err}`);
+      } catch (err: unknown) {
+        if (generation.current === requestGeneration) {
+          setError(
+            `Could not compare these builds: ${
+              err instanceof Error ? err.message : String(err)
+            }`
+          );
+        }
       } finally {
-        setLoading(false);
+        if (generation.current === requestGeneration) {
+          setLoading(false);
+        }
       }
     },
     []
   );
 
   const resetComparison = React.useCallback(() => {
-    setCommitterMap(null);
+    generation.current += 1;
+    setResult(null);
     setError(null);
     setLoading(false);
   }, []);
 
-  return { committerMap, loading, error, compareCommits, resetComparison };
+  const loadComparison = React.useCallback((comparison: ComparisonResult) => {
+    generation.current += 1;
+    setResult(comparison);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  return {
+    result,
+    loading,
+    error,
+    compareCommits,
+    resetComparison,
+    loadComparison,
+  };
 }

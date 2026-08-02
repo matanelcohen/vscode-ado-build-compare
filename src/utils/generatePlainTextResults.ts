@@ -1,35 +1,28 @@
-// Helper function to parse the commit string (same as in CommitComparisonResults)
-const parseCommitString = (commitString: string) => {
-  const prRegex = /# PR (\d+) Message: (.*?)\s*-\s*<a href="(.*?)"/;
-  const match = commitString.match(prRegex);
+import { ComparisonResult } from "../models/comparison";
 
-  if (match) {
-    return {
-      prNumber: match[1],
-      message: (match[2] ?? "").trim(),
-      link: match[3],
-    };
-  }
-  // Fallback if parsing fails
-  return { prNumber: null, message: commitString, link: null };
-};
+export function generatePlainTextResults(result: ComparisonResult): string {
+  const lines = [
+    "Deployment comparison",
+    `${result.baseBuild.buildNumber} -> ${result.targetBuild.buildNumber}`,
+    `${result.pullRequests.length} pull requests | ${result.commits.length} commits | ${result.files.length} files | ${result.contributors.length} contributors`,
+    `Release risk: ${result.risk.level.toUpperCase()} (${result.risk.score}/100)`,
+    "",
+  ];
 
-export function generatePlainTextResults(committerMap: { [committer: string]: string[] }): string {
-  let plainText = 'Comparison Results:\n\n';
-  for (const [committer, commits] of Object.entries(committerMap)) {
-    plainText += `${committer} (${commits.length} ${commits.length === 1 ? "commit" : "commits"}):\n`;
-    for (const commitStr of commits) {
-      const { prNumber, message, link } = parseCommitString(commitStr);
-      if (prNumber) {
-        plainText += `  - PR #${prNumber}: ${message}\n`;
-        // Optionally include the link on a new line or appended
-        plainText += `    Link: ${link}\n`;
-      } else {
-        // Fallback for messages that couldn't be parsed
-        plainText += `  - ${message}\n`;
-      }
+  for (const commit of result.commits) {
+    const message = commit.message.split("\n")[0] || "No commit message";
+    if (commit.pullRequest) {
+      lines.push(
+        `- PR #${commit.pullRequest.id}: ${commit.pullRequest.title}`,
+        `  ${commit.pullRequest.url}`
+      );
+    } else {
+      lines.push(`- ${commit.id.slice(0, 7)}: ${message}`);
     }
-    plainText += '\n'; // Add a blank line between committers
   }
-  return plainText;
+
+  if (result.commits.length === 0) {
+    lines.push("No relevant changes found.");
+  }
+  return lines.join("\n");
 }

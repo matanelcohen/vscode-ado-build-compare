@@ -9,6 +9,9 @@ import {
   Caption1,
   Title3,
   Tooltip,
+  Badge,
+  Dropdown,
+  Option,
 } from "@fluentui/react-components";
 import { PipelineRun } from "../../api-sdk";
 
@@ -97,20 +100,36 @@ const useStyles = makeStyles({
     opacity: 0.5,
     cursor: "not-allowed",
   },
+  empty: {
+    textAlign: "center",
+    color: tokens.colorNeutralForeground3,
+    ...shorthands.padding(tokens.spacingVerticalXXL),
+  },
+  buildMeta: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
 });
 
 interface BuildSelectorProps {
+  baseBuilds: PipelineRun[];
+  baseBuildId: number | null;
   builds: PipelineRun[];
   selectedBuildId: number | null;
   onSelect: (buildId: number) => void;
+  onSelectBase: (buildId: number) => void;
   onCompare: () => void;
   disabled?: boolean;
 }
 
 export const BuildSelector: React.FC<BuildSelectorProps> = ({
+  baseBuilds,
+  baseBuildId,
   builds,
   selectedBuildId,
   onSelect,
+  onSelectBase,
   onCompare,
   disabled,
 }) => {
@@ -127,6 +146,31 @@ export const BuildSelector: React.FC<BuildSelectorProps> = ({
   return (
     <Card className={styles.card}>
       <Title3 className={styles.title}>Select a build to compare</Title3>
+      <div>
+        <Caption1 block>Base build</Caption1>
+        <Dropdown
+          value={
+            baseBuilds.find((build) => build.id === baseBuildId)?.buildNumber ??
+            ""
+          }
+          selectedOptions={baseBuildId ? [String(baseBuildId)] : []}
+          onOptionSelect={(_, data) => {
+            const id = Number(data.optionValue);
+            if (Number.isInteger(id)) {
+              onSelectBase(id);
+            }
+          }}
+          disabled={disabled}
+          aria-label="Base build"
+        >
+          {baseBuilds.map((build) => (
+            <Option key={build.id} value={String(build.id)}>
+              {build.buildNumber}
+            </Option>
+          ))}
+        </Dropdown>
+      </div>
+      <Caption1>Target builds newer than the selected base</Caption1>
       <div className={styles.buildList}>
         {builds.map((build) => {
           const isSelected = build.id === selectedBuildId;
@@ -141,6 +185,12 @@ export const BuildSelector: React.FC<BuildSelectorProps> = ({
               tabIndex={disabled ? -1 : 0}
               aria-pressed={isSelected}
               aria-disabled={disabled}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleSelect(build.id);
+                }
+              }}
             >
               <div className={styles.buildInfo}>
                 <Body1>Build {build.buildNumber}</Body1>
@@ -159,14 +209,26 @@ export const BuildSelector: React.FC<BuildSelectorProps> = ({
                   </Tooltip>
                 )}
               </div>
-              <Caption1 className={styles.buildDate}>
-                {build.finishTime
-                  ? new Date(build.finishTime).toLocaleDateString()
-                  : "In Progress"}
-              </Caption1>
+              <div className={styles.buildMeta}>
+                {build.result && (
+                  <Badge appearance="tint" color={build.result === "2" ? "success" : "informative"}>
+                    {build.result === "2" ? "Succeeded" : build.result}
+                  </Badge>
+                )}
+                <Caption1 className={styles.buildDate}>
+                  {build.finishTime
+                    ? new Date(build.finishTime).toLocaleString()
+                    : "In progress"}
+                </Caption1>
+              </div>
             </div>
           );
         })}
+        {builds.length === 0 && (
+          <div className={styles.empty}>
+            No newer target builds are available after this base build.
+          </div>
+        )}
       </div>
       <div className={styles.actionBar}>
         <Button

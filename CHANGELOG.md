@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- Replaced date-based commit lookup with build-to-build Git ancestry comparison.
+- Added typed pull request, direct commit, contributor, and changed-file results.
+- Added summary metrics, result search, refresh, empty states, and keyboard-accessible build selection.
+- Added Microsoft Teams Workflow Adaptive Card delivery with optional contributor mentions.
+- Added guided Azure DevOps discovery for projects, repositories, pipelines, and deployment stages.
+- Added named pipeline profiles with switching, deletion, and one-time migration from legacy settings.
+- Added arbitrary build, branch, tag, and compatible environment drift comparisons.
+- Added release-risk scoring and explicit Copilot-generated summaries.
+- Added recent comparison history, Markdown/JSON exports, and ADO work-item creation.
+- Added editable profiles and opt-in scheduled Teams notifications while VS Code is running.
+- Added deterministic coverage plus an explicit opt-in live ADO/Teams smoke-test harness.
+- Stored Teams webhook URLs in VS Code SecretStorage and kept Azure access tokens out of the webview.
+- Added bounded Azure DevOps API concurrency, explicit errors, strict CI linting, and automated tests.
+
 All notable changes to the "Build Compare Tools" extension will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

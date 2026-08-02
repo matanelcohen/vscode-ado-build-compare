@@ -5,7 +5,16 @@ A Visual Studio Code extension for comparing Azure DevOps builds and analyzing c
 ## Features
 
 - 🔄 **Build Comparison**: Compare builds and see what changed between the last successful deployment and a selected build
-- 📊 **Commit Analysis**: View commits grouped by committer with pull request links
+- 📊 **Release Summary**: Review pull requests, direct commits, contributors, and changed files
+- 🔎 **Accurate Git Ranges**: Compare build commit ancestry instead of approximating by date
+- 🧭 **Result Filtering**: Search by PR, contributor, commit message, or file
+- 💬 **Microsoft Teams Sharing**: Send Adaptive Cards through Teams Workflows and optionally mention contributors
+- 🧭 **Guided Setup**: Discover projects, repositories, pipelines, and deployment stages without copying IDs
+- 🗂️ **Pipeline Profiles**: Save and switch between multiple pipelines and environments
+- 🧠 **Release Intelligence**: Risk scoring plus optional Copilot-generated summaries
+- 🌿 **Flexible Comparison**: Compare builds, branches, tags, or compatible environment profiles
+- 🕘 **History and Export**: Reopen recent comparisons and export Markdown or JSON
+- 📣 **Automation**: Post new-build comparisons to Teams while VS Code is running
 - 🚀 **Pipeline Integration**: Direct integration with Azure DevOps pipelines
 - 🎨 **VS Code Theme Support**: Matches your VS Code theme (light/dark/high contrast)
 - ⚡ **Real-time Data**: Fetches live data from Azure DevOps APIs
@@ -39,25 +48,31 @@ A Visual Studio Code extension for comparing Azure DevOps builds and analyzing c
 3. Click the `...` menu and select "Install from VSIX..."
 4. Select the downloaded `.vsix` file
 
-## Configuration
+## Guided setup
 
-Before using the extension, configure it in VS Code settings:
+On first use, select **Start guided setup**. The extension:
 
-1. Open VS Code Settings (`Ctrl+,`)
-2. Search for "Build Compare Tools"
-3. Configure the following settings:
+1. Signs in with VS Code's Microsoft authentication provider.
+2. Discovers projects in the Azure DevOps organization.
+3. Lists repositories and matching build pipelines.
+4. Inspects recent runs to discover deployment stage names.
+5. Saves the selection as a named pipeline profile.
 
-### Required Settings
+Use **Add profile**, **Switch**, and **Delete** in the comparison header to
+manage multiple pipelines or environments. Use **Edit** to change the profile
+name, deployment stage, path filters, and automatic Teams behavior. Profiles
+contain non-secret configuration only; access tokens remain in the extension
+host.
 
-- **Organization URL**: Your Azure DevOps organization URL (e.g., `https://dev.azure.com/yourorg`)
-- **Project Name**: Your Azure DevOps project name
-- **Pipeline Definition ID**: The ID of the pipeline you want to monitor
-- **Target Stage Name**: The name of the deployment stage to track (e.g., "Deploy to Production")
-- **Repository ID**: The ID or name of the Git repository
+The command palette also provides:
 
-### Optional Settings
+- **Build Compare Tools: Add Pipeline Profile**
+- **Build Compare Tools: Switch Pipeline Profile**
+- **Build Compare Tools: Edit Pipeline Profile**
+- **Build Compare Tools: Delete Pipeline Profile**
 
-- **Relevant Path Filter**: Filter commits by path (e.g., `/src/frontend`) to show only relevant changes
+Existing `buildCompareTools.*` VS Code settings are migrated once into a
+**Workspace settings** profile for backward compatibility.
 
 ## Usage
 
@@ -72,9 +87,49 @@ Before using the extension, configure it in VS Code settings:
    - Click "Compare" to see the changes
 
 4. **Analyze Results**:
-   - View commits grouped by committer
+   - Review summary metrics, pull requests, direct commits, and changed files
+   - Filter results by PR, contributor, message, or file path
    - Click on pull request links to view details in Azure DevOps
    - Copy results to clipboard for sharing
+
+5. **Share to Teams**:
+   - Create a Teams Workflow using the **When a Teams webhook request is received** trigger
+   - Run **Build Compare Tools: Configure Teams Workflow**
+   - Paste the HTTPS trigger URL; it is stored securely in VS Code SecretStorage
+   - After comparing builds, choose contributors to notify and send the Adaptive Card
+
+### Teams mention requirements
+
+Teams mentions require the contributor identity from Azure DevOps to match a
+Microsoft Entra object ID or user principal name (UPN) in the destination
+tenant. If an identity cannot be resolved by Teams, the comparison still sends
+but that person may appear as text rather than receive a notification.
+
+Workflow URLs are secrets. Do not commit them to source control or place them in
+VS Code settings. Assign workflow co-owners so release notifications do not
+depend on one person's account.
+
+Automatic notifications are explicitly opt-in per profile and run only while
+VS Code and the extension are active. They use the configured Teams Workflow
+destination. Mentions can be selected from ADO identities or entered manually
+as Microsoft Entra UPNs.
+
+Direct Graph channel selection is intentionally not used: VS Code's stable
+Microsoft authentication provider cannot identify this extension with its own
+Entra client registration. Teams Workflow setup provides tenant-governed
+channel selection without requesting broad Graph permissions.
+
+## Release intelligence
+
+Every comparison receives a deterministic risk score based on database,
+security, infrastructure, dependency, configuration, direct-commit, change
+volume, and incomplete-analysis signals. **Generate with Copilot** is an
+explicit action; comparison metadata is sent to the selected VS Code language
+model only after the user clicks it.
+
+Comparisons can be exported as Markdown or JSON or used to create an Azure
+DevOps Task, Issue, or Bug. The ten most recent comparisons per profile are
+stored in VS Code global state.
 
 ## Development
 
@@ -107,13 +162,14 @@ npm run compile-watch
 ├── src/
 │   ├── components/          # React components
 │   ├── hooks/              # React hooks
-│   ├── interfaces/         # TypeScript interfaces
+│   ├── models/             # Typed comparison and sharing models
+│   ├── teams/              # Teams Adaptive Card generation
 │   ├── pages/              # Main page components
 │   ├── services/           # API services
 │   ├── utils/              # Utility functions
 │   ├── extension.ts        # VS Code extension entry point
 │   ├── index.tsx           # React app entry point
-│   └── api.ts              # Azure DevOps API calls
+│   └── api-sdk.ts          # Typed extension-host messaging
 ├── media/                  # Icons and images
 ├── docs/                   # Documentation
 └── out/                    # Compiled output
@@ -135,12 +191,34 @@ npm run package
 ### Testing
 
 ```bash
-# Lint code
+# Unit tests
+npm test
+
+# Full local quality gate
+npm run check
+
+# Lint only
 npm run lint
 
 # Fix linting issues
 npm run lint:fix
 ```
+
+### Optional live integration smoke test
+
+The normal test suite is deterministic and does not contact external services.
+To explicitly test a real ADO organization and optionally a Teams Workflow:
+
+```bash
+RUN_LIVE_INTEGRATION=1 \
+ADO_ORGANIZATION_URL=https://dev.azure.com/yourorg \
+ADO_PROJECT=YourProject \
+ADO_ACCESS_TOKEN=... \
+TEAMS_WORKFLOW_WEBHOOK=... \
+npm run test:live
+```
+
+`TEAMS_WORKFLOW_WEBHOOK` is optional. Never commit these values.
 
 ## Contributing
 
@@ -164,7 +242,7 @@ The extension uses VS Code's built-in Microsoft authentication to access Azure D
 
 ### Common Issues
 
-1. **"Configuration missing" error**: Ensure all required settings are configured in VS Code settings
+1. **No profile configured**: Run **Build Compare Tools: Add Pipeline Profile**
 2. **Authentication failed**: Try signing out and back in through VS Code's account menu
 3. **No builds found**: Check that the pipeline definition ID is correct and the pipeline has completed runs
 4. **Empty results**: Verify that the target stage name matches exactly with your pipeline stage

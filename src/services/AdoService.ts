@@ -1,26 +1,51 @@
 import * as azdev from "azure-devops-node-api";
 import { IBuildApi } from "azure-devops-node-api/BuildApi";
 import { IGitApi } from "azure-devops-node-api/GitApi";
+import { IWorkItemTrackingApi } from "azure-devops-node-api/WorkItemTrackingApi";
 import { Build, BuildStatus } from "azure-devops-node-api/interfaces/BuildInterfaces";
-import { GitPullRequest, GitPullRequestSearchCriteria } from "azure-devops-node-api/interfaces/GitInterfaces";
+import {
+  GitCommitRef,
+  GitPullRequest,
+  GitPullRequestQueryType,
+  GitVersionType,
+  VersionControlChangeType,
+} from "azure-devops-node-api/interfaces/GitInterfaces";
+import { Operation } from "azure-devops-node-api/interfaces/common/VSSInterfaces";
 import { AdcPipelineViewerConfig } from "../api-sdk";
 import { PipelineRun } from "../api-sdk";
+import {
+  ComparedCommit,
+  ComparedFile,
+  ComparedPullRequest,
+  ComparisonIdentity,
+  ComparisonResult,
+  GitReference,
+} from "../models/comparison";
+import {
+  isPathRelevant,
+  mapWithConcurrency,
+  parsePathFilters,
+  uniqueFiles,
+  uniqueIdentities,
+} from "../utils/comparison";
+import { analyzeReleaseRisk } from "../utils/riskAnalysis";
 
 export class AdoService {
   private connection: azdev.WebApi;
   private buildApi: Promise<IBuildApi>;
   private gitApi: Promise<IGitApi>;
+  private workItemApi: Promise<IWorkItemTrackingApi>;
   private config: AdcPipelineViewerConfig;
 
   constructor(organizationUrl: string, accessToken: string, config: AdcPipelineViewerConfig) {
-    // Create the connection using Personal Access Token
-    const authHandler = azdev.getPersonalAccessTokenHandler(accessToken);
+    const authHandler = azdev.getBearerHandler(accessToken);
     this.connection = new azdev.WebApi(organizationUrl, authHandler);
     this.config = config;
 
     // Initialize API clients
     this.buildApi = this.connection.getBuildApi();
     this.gitApi = this.connection.getGitApi();
+    this.workItemApi = this.connection.getWorkItemTrackingApi();
   }
 
   /**
@@ -93,8 +118,7 @@ export class AdoService {
         return null;
       }
 
-      // Check all builds in parallel for better performance
-      const timelinePromises = builds.map(async (build) => {
+      const results = await mapWithConcurrency(builds, 6, async (build) => {
         try {
           const timeline = await buildApiClient.getBuildTimeline(
             this.config.projectName,
@@ -122,14 +146,13 @@ export class AdoService {
         }
       });
 
-      // Wait for all timeline checks to complete
-      const results = await Promise.all(timelinePromises);
       const successfulBuild = results.find(result => result !== null);
 
       return successfulBuild ? this.buildToPipelineRun(successfulBuild) : null;
     } catch (error) {
-      console.error("Error finding latest deployed run:", error);
-      return null;
+      throw new Error(
+        `Unable to inspect pipeline deployments: ${this.errorMessage(error)}`
+      );
     }
   }
 
@@ -161,9 +184,7 @@ export class AdoService {
         return [];
       }
 
-      // Fetch commit messages for each build
-      const runsWithMessages = await Promise.all(
-        builds.map(async (build: Build) => {
+      return mapWithConcurrency(builds, 8, async (build: Build) => {
           let commitMessage: string | undefined = undefined;
 
           if (build.sourceVersion && this.config.repositoryId) {
@@ -174,19 +195,15 @@ export class AdoService {
                 this.config.projectName
               );
               commitMessage = commit.comment;
-            } catch (commitError) {
-              // Ignore error and continue without commit message
+            } catch {
+              commitMessage = undefined;
             }
           }
 
           return this.buildToPipelineRun(build, commitMessage);
-        })
-      );
-
-      return runsWithMessages;
+        });
     } catch (error) {
-      console.error("Error fetching last N builds:", error);
-      return [];
+      throw new Error(`Unable to load builds: ${this.errorMessage(error)}`);
     }
   }
 
@@ -196,171 +213,362 @@ export class AdoService {
   async fetchCommitRangeData(
     olderRun: PipelineRun,
     selectedBuild: PipelineRun
-  ): Promise<{
-    committerMap: { [committer: string]: string[] };
-    error?: string;
-  }> {
-    try {
-      if (!olderRun.sourceVersion || !selectedBuild.sourceVersion) {
-        return {
-          committerMap: {},
-          error: "Missing source versions for build comparison"
-        };
-      }
+  ): Promise<ComparisonResult> {
+    if (!olderRun.sourceVersion || !selectedBuild.sourceVersion) {
+      throw new Error("Both builds must have a source commit.");
+    }
+    if (olderRun.sourceVersion === selectedBuild.sourceVersion) {
+      const empty = {
+        baseBuild: olderRun,
+        targetBuild: selectedBuild,
+        commits: [],
+        pullRequests: [],
+        directCommits: [],
+        contributors: [],
+        files: [],
+        pathFilters: parsePathFilters(this.config.relevantPathFilter),
+        warnings: [],
+      };
+      return { ...empty, risk: analyzeReleaseRisk(empty) };
+    }
 
-      const gitApiClient = await this.gitApi;
-
-      // Parallelize the initial commit fetches for better performance
-      const [parentCommit, newerCommitDetails] = await Promise.all([
-        gitApiClient.getCommit(
-          olderRun.sourceVersion,
-          this.config.repositoryId,
-          this.config.projectName
-        ),
-        gitApiClient.getCommit(
-          selectedBuild.sourceVersion,
-          this.config.repositoryId,
-          this.config.projectName
-        )
-      ]);
-
-      if (!parentCommit.parents || parentCommit.parents.length === 0) {
-        return {
-          committerMap: {},
-          error: `Could not find parent commit for ${olderRun.sourceVersion}`
-        };
-      }
-
-      const parentCommitId = parentCommit.parents[0];
-      if (!parentCommitId) {
-        return {
-          committerMap: {},
-          error: "Invalid parent commit ID"
-        };
-      }
-
-      // Get the parent commit details
-      const parentCommitDetails = await gitApiClient.getCommit(
-        parentCommitId,
-        this.config.repositoryId,
-        this.config.projectName
-      );
-
-      const fromDate = parentCommitDetails.committer?.date || parentCommitDetails.author?.date;
-      const toDate = newerCommitDetails.committer?.date || newerCommitDetails.author?.date;
-
-      if (!fromDate || !toDate) {
-        return {
-          committerMap: {},
-          error: "Could not determine commit dates for range."
-        };
-      }
-
-      // Get commits in the range
-      const commits = await gitApiClient.getCommits(
-        this.config.repositoryId,
-        {
-          itemVersion: { version: "main" },
-          fromDate: fromDate.toISOString(),
-          toDate: toDate.toISOString(),
-          $top: 10000
+    const gitApiClient = await this.gitApi;
+    const commits = await gitApiClient.getCommitsBatch(
+      {
+        itemVersion: {
+          version: selectedBuild.sourceVersion,
+          versionType: GitVersionType.Commit,
         },
-        this.config.projectName
+        compareVersion: {
+          version: olderRun.sourceVersion,
+          versionType: GitVersionType.Commit,
+        },
+        includeLinks: true,
+        $top: 10000,
+      },
+      this.config.repositoryId,
+      this.config.projectName
+    );
+
+    if (commits.length >= 10000) {
+      throw new Error(
+        "The comparison contains at least 10,000 commits. Choose a narrower build range."
       );
+    }
 
-      const committerMap: { [committer: string]: string[] } = {};
-      const prIdRegex = /Merged PR (\d+)/i;
+    const pathFilters = parsePathFilters(this.config.relevantPathFilter);
+    const pullRequests = await this.findPullRequestsForCommits(commits);
+    const warnings: string[] = [];
 
-      // Process commits in chunks to avoid overwhelming the API (increased for better performance)
-      const chunkSize = 20;
-      for (let i = 0; i < commits.length; i += chunkSize) {
-        const chunk = commits.slice(i, i + chunkSize);
+    const compared = await mapWithConcurrency(commits, 8, async (commit) => {
+      const commitId = commit.commitId;
+      if (!commitId) {
+        return null;
+      }
 
-        await Promise.all(
-          chunk.map(async (commit: any) => {
-            try {
-              // Get changes for this commit to check if it affects relevant paths
-              const changes = await gitApiClient.getChanges(
-                commit.commitId || "",
-                this.config.repositoryId,
-                this.config.projectName
-              );
-
-              const affectedPaths = changes.changes?.map((c: any) => c.item?.path || "") || [];
-
-              // Apply path filtering if configured
-              const pathPatterns = this.config.relevantPathFilter
-                ? this.config.relevantPathFilter
-                    .split(",")
-                    .map(pattern => pattern.trim())
-                    .filter(pattern => pattern.length > 0)
-                : [];
-
-              const isRelevant = pathPatterns.length === 0 ||
-                affectedPaths.some((path: string) =>
-                  path && pathPatterns.some(pattern => path.includes(pattern))
-                );
-
-              if (isRelevant) {
-                const committerName = commit.committer?.name || "Unknown";
-                const match = commit.comment?.match(prIdRegex);
-                const prNumber = match?.[1];
-
-                if (prNumber) {
-                  const prLink = `${this.config.organizationUrl}/${this.config.projectName}/_git/${this.config.repositoryId}/pullrequest/${prNumber}`;
-                  const mergeTitle = commit.comment;
-                  const prLine = `# PR ${prNumber} Message: ${mergeTitle} - <a href="${prLink}" target="_blank">${prLink}</a>`;
-
-                  if (!committerMap[committerName]) {
-                    committerMap[committerName] = [];
-                  }
-                  committerMap[committerName].push(prLine);
-                }
-              }
-            } catch (error) {
-              // Continue processing other commits if one fails
-              return;
-            }
-          })
+      try {
+        const changes = await gitApiClient.getChanges(
+          commitId,
+          this.config.repositoryId,
+          this.config.projectName,
+          10000
         );
-      }
+        if ((changes.changes?.length ?? 0) >= 10000) {
+          warnings.push(
+            `Commit ${commitId.slice(0, 7)} contains at least 10,000 file changes; its file list was truncated.`
+          );
+        }
+        const files: ComparedFile[] = (changes.changes ?? [])
+          .map((change) => {
+            const path = change.item?.path;
+            if (!path) {
+              return null;
+            }
+            return {
+              path,
+              changeType:
+                VersionControlChangeType[change.changeType ?? 0] ?? "Unknown",
+            };
+          })
+          .filter((file): file is ComparedFile => file !== null)
+          .filter((file) => isPathRelevant(file.path, pathFilters));
 
-      return { committerMap };
-    } catch (error: any) {
-      return {
-        committerMap: {},
-        error: error?.message || "Unknown error"
-      };
+        if (pathFilters.length > 0 && files.length === 0) {
+          return null;
+        }
+
+        const pullRequest = pullRequests.get(commitId);
+        const author = this.gitIdentity(
+          commit.author?.name,
+          commit.author?.email
+        );
+        const result: ComparedCommit = {
+          id: commitId,
+          message: commit.comment?.trim() || "No commit message",
+          author,
+          files,
+          ...(commit.author?.date
+            ? { committedAt: commit.author.date.toISOString() }
+            : {}),
+          ...(pullRequest ? { pullRequest } : {}),
+        };
+        return result;
+      } catch (error) {
+        warnings.push(
+          `Could not inspect files for commit ${commitId.slice(0, 7)}: ${this.errorMessage(error)}`
+        );
+        return null;
+      }
+    });
+
+    const relevantCommits = compared.filter(
+      (commit): commit is ComparedCommit => commit !== null
+    );
+    const uniquePullRequests = new Map<number, ComparedPullRequest>();
+    for (const commit of relevantCommits) {
+      if (commit.pullRequest) {
+        uniquePullRequests.set(commit.pullRequest.id, commit.pullRequest);
+      }
     }
+
+    const resultWithoutRisk = {
+      baseBuild: olderRun,
+      targetBuild: selectedBuild,
+      commits: relevantCommits,
+      pullRequests: [...uniquePullRequests.values()],
+      directCommits: relevantCommits.filter((commit) => !commit.pullRequest),
+      contributors: uniqueIdentities(
+        relevantCommits.map(
+          (commit) => commit.pullRequest?.createdBy ?? commit.author
+        )
+      ),
+      files: uniqueFiles(relevantCommits.flatMap((commit) => commit.files)),
+      pathFilters,
+      warnings,
+    };
+    return {
+      ...resultWithoutRisk,
+      risk: analyzeReleaseRisk(resultWithoutRisk),
+    };
   }
 
-  /**
-   * Get active pull request for a branch
-   */
-  async getActivePullRequestForBranch(branchName: string): Promise<GitPullRequest | null> {
-    try {
-      const gitApiClient = await this.gitApi;
-      const sourceRef = branchName.startsWith("refs/heads/") ? branchName : `refs/heads/${branchName}`;
+  private async findPullRequestsForCommits(
+    commits: GitCommitRef[]
+  ): Promise<Map<string, ComparedPullRequest>> {
+    const commitIds = commits
+      .map((commit) => commit.commitId)
+      .filter((id): id is string => Boolean(id));
+    if (commitIds.length === 0) {
+      return new Map();
+    }
 
-      const searchCriteria: GitPullRequestSearchCriteria = {
-        sourceRefName: sourceRef,
-        status: 1 // Active status
-      };
-
-      const pullRequests = await gitApiClient.getPullRequests(
+    const byCommit = new Map<string, ComparedPullRequest>();
+    const chunks = Array.from(
+      { length: Math.ceil(commitIds.length / 100) },
+      (_, index) => commitIds.slice(index * 100, (index + 1) * 100)
+    );
+    const gitApiClient = await this.gitApi;
+    const responses = await mapWithConcurrency(chunks, 4, (items) =>
+      gitApiClient.getPullRequestQuery(
+        {
+          queries: [
+            { type: GitPullRequestQueryType.LastMergeCommit, items },
+            { type: GitPullRequestQueryType.Commit, items },
+          ],
+        },
         this.config.repositoryId,
-        searchCriteria,
         this.config.projectName
-      );
+      )
+    );
 
-      if (pullRequests && pullRequests.length > 0) {
-        return pullRequests[0] || null;
+    for (const response of responses) {
+      const [exactMatches, broadMatches] = response.results ?? [];
+      if (exactMatches) {
+        for (const [commitId, matches] of Object.entries(exactMatches)) {
+          const pullRequest = matches[0];
+          if (pullRequest) {
+            byCommit.set(commitId, this.toComparedPullRequest(pullRequest));
+          }
+        }
       }
-
-      return null;
-    } catch (error) {
-      console.error("Error getting active pull request:", error);
-      return null;
+      if (broadMatches) {
+        for (const [commitId, matches] of Object.entries(broadMatches)) {
+          const pullRequest = matches[0];
+          if (pullRequest && !byCommit.has(commitId)) {
+            byCommit.set(commitId, this.toComparedPullRequest(pullRequest));
+          }
+        }
+      }
     }
+    return byCommit;
   }
+
+  private toComparedPullRequest(
+    pullRequest: GitPullRequest
+  ): ComparedPullRequest {
+    const id = pullRequest.pullRequestId ?? 0;
+    return {
+      id,
+      title: pullRequest.title?.trim() || `Pull request #${id}`,
+      url:
+        pullRequest._links?.web?.href ??
+        `${this.config.organizationUrl}/${encodeURIComponent(
+          this.config.projectName
+        )}/_git/${encodeURIComponent(
+          this.config.repositoryId
+        )}/pullrequest/${id}`,
+      createdBy: this.adoIdentity(
+        pullRequest.createdBy?.displayName,
+        pullRequest.createdBy?.uniqueName,
+        pullRequest.createdBy?.id
+      ),
+      reviewers: (pullRequest.reviewers ?? []).map((reviewer) =>
+        this.adoIdentity(
+          reviewer.displayName,
+          reviewer.uniqueName,
+          reviewer.id
+        )
+      ),
+      workItemCount: pullRequest.workItemRefs?.length ?? 0,
+    };
+  }
+
+  private gitIdentity(name?: string, email?: string): ComparisonIdentity {
+    return {
+      displayName: name?.trim() || email?.trim() || "Unknown contributor",
+      ...(email?.trim() ? { email: email.trim() } : {}),
+    };
+  }
+
+  private adoIdentity(
+    displayName?: string,
+    uniqueName?: string,
+    id?: string
+  ): ComparisonIdentity {
+    return {
+      displayName:
+        displayName?.trim() || uniqueName?.trim() || "Unknown contributor",
+      ...(uniqueName?.trim() ? { email: uniqueName.trim() } : {}),
+      ...(id?.trim() ? { id: id.trim() } : {}),
+    };
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  async createComparisonWorkItem(
+    result: ComparisonResult,
+    title: string,
+    workItemType: string,
+    summary: string
+  ): Promise<{ id: number; url?: string }> {
+    const workItemApi = await this.workItemApi;
+    const changeLines = result.commits
+      .slice(0, 50)
+      .map((commit) =>
+        commit.pullRequest
+          ? `<li><a href="${escapeHtml(commit.pullRequest.url)}">PR #${
+              commit.pullRequest.id
+            }</a>: ${escapeHtml(commit.pullRequest.title)}</li>`
+          : `<li><code>${commit.id.slice(0, 7)}</code>: ${escapeHtml(
+              commit.message.split("\n")[0] || "No commit message"
+            )}</li>`
+      )
+      .join("");
+    const description = [
+      `<p>${escapeHtml(summary)}</p>`,
+      `<p><strong>Release risk:</strong> ${result.risk.level.toUpperCase()} (${result.risk.score}/100)</p>`,
+      `<p><strong>Builds:</strong> ${escapeHtml(
+        result.baseBuild.buildNumber
+      )} → ${escapeHtml(result.targetBuild.buildNumber)}</p>`,
+      `<ul>${changeLines}</ul>`,
+    ].join("");
+    const document = [
+      {
+        op: Operation.Add,
+        path: "/fields/System.Title",
+        value: title,
+      },
+      {
+        op: Operation.Add,
+        path: "/fields/System.Description",
+        value: description,
+      },
+      {
+        op: Operation.Add,
+        path: "/fields/System.Tags",
+        value: "Build Compare; Deployment",
+      },
+    ];
+    const workItem = await workItemApi.createWorkItem(
+      undefined,
+      document,
+      this.config.projectName,
+      workItemType
+    );
+    if (!workItem.id) {
+      throw new Error("Azure DevOps created a work item without an ID.");
+    }
+    return {
+      id: workItem.id,
+      ...(workItem._links?.html?.href
+        ? { url: workItem._links.html.href as string }
+        : {}),
+    };
+  }
+
+  async getGitReferences(): Promise<GitReference[]> {
+    const gitApiClient = await this.gitApi;
+    const refs = await gitApiClient.getRefs(
+      this.config.repositoryId,
+      this.config.projectName,
+      undefined,
+      false,
+      false,
+      false,
+      false,
+      true
+    );
+    return refs
+      .map((ref): GitReference | null => {
+        if (!ref.name || !ref.objectId) {
+          return null;
+        }
+        const branchPrefix = "refs/heads/";
+        const tagPrefix = "refs/tags/";
+        const kind = ref.name.startsWith(branchPrefix)
+          ? "branch"
+          : ref.name.startsWith(tagPrefix)
+            ? "tag"
+            : null;
+        if (!kind) {
+          return null;
+        }
+        return {
+          name: ref.name,
+          displayName: ref.name.slice(
+            kind === "branch" ? branchPrefix.length : tagPrefix.length
+          ),
+          kind,
+          commitId: ref.peeledObjectId ?? ref.objectId,
+        };
+      })
+      .filter((ref): ref is GitReference => ref !== null)
+      .sort((left, right) =>
+        `${left.kind}:${left.displayName}`.localeCompare(
+          `${right.kind}:${right.displayName}`
+        )
+      );
+  }
+
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

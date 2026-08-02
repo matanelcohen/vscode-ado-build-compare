@@ -26,7 +26,7 @@
   ],
   "sideEffects": false,
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.91.0"
   },
   "categories": [
     "Other"
@@ -52,6 +52,36 @@
         "command": "fe-ninja-tools.openSettings",
         "title": "Open Build Compare Tools Settings",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "fe-ninja-tools.configureTeams",
+        "title": "Configure Teams Workflow",
+        "category": "Build Compare Tools",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "fe-ninja-tools.setupProfile",
+        "title": "Add Pipeline Profile",
+        "category": "Build Compare Tools",
+        "icon": "$(add)"
+      },
+      {
+        "command": "fe-ninja-tools.switchProfile",
+        "title": "Switch Pipeline Profile",
+        "category": "Build Compare Tools",
+        "icon": "$(list-selection)"
+      },
+      {
+        "command": "fe-ninja-tools.deleteProfile",
+        "title": "Delete Pipeline Profile",
+        "category": "Build Compare Tools",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "fe-ninja-tools.editProfile",
+        "title": "Edit Pipeline Profile",
+        "category": "Build Compare Tools",
+        "icon": "$(edit)"
       }
     ],
     "viewsContainers": {
@@ -139,7 +169,10 @@
     "analyze-bundle": "webpack-bundle-analyzer out/extension.js",
     "lint": "eslint src --ext ts,tsx",
     "lint:fix": "eslint src --ext ts,tsx --fix",
-    "lint:ci": "eslint src --ext ts,tsx --max-warnings 100"
+    "lint:ci": "eslint src --ext ts,tsx --max-warnings 0",
+    "test": "tsx --test tests/*.test.ts",
+    "test:live": "tsx scripts/live-integration.ts",
+    "check": "npm run test && npm run lint:ci && npx tsc --noEmit && npm run compile-production"
   },
   "devDependencies": {
     "@types/node": "20.x",
@@ -149,10 +182,12 @@
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.11.0",
+    "@vscode/vsce": "^3.9.2",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "ts-loader": "^9.5.2",
+    "tsx": "^4.23.1",
     "typescript": "^5.8.3",
     "webpack": "^5.100.2",
     "webpack-bundle-analyzer": "^4.10.2",
