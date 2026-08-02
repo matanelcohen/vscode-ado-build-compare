@@ -8,3 +8,5 @@ export * from "./ReportActions";
 export * from "./ComparisonHistory";
 export * from "./ReferenceComparison";
 export * from "./EnvironmentDrift";
+export * from "./BuildDiffHeader";
+export * from "./SkinPicker";

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .page { width: 1100px; }
+  .body { display: grid; grid-template-columns: 268px 1fr; min-height: 560px; }
+  .rail { border-right: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 13px; background: var(--bg2); }
+  .pane { padding: 0 16px 16px; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .tab { padding: 9px 13px; font-size: 12.5px; color: var(--fg-dim); border-bottom: 2px solid transparent; }
+  .tab.on { color: #fff; border-bottom-color: var(--accent); font-weight: 600; }
+  .buildlist { border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .b { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 9px; border-bottom: 1px solid #333; font-size: 12px; }
+  .b:last-child { border-bottom: none; }
+  .b.on { background: rgba(0,120,212,.25); box-shadow: inset 2px 0 0 var(--accent); }
+  .metrics { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 9px; }
+  .m { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+  .m b { display: block; font-size: 20px; font-weight: 600; line-height: 1.2; }
+  .m span { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-dim); }
+  .m.risk { border-left: 3px solid var(--amber); }
+  .m.risk b { color: var(--amber); }
+  .sec { margin-top: 14px; }
+  .sectitle { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8a8a8a; margin-bottom: 7px; }
+  .rail hr { border: none; border-top: 1px solid var(--border); margin: 2px 0; }
+</style>
+</head>
+<body>
+<div class="frame page">
+  <div class="mocklabel">Mockup B &mdash; &ldquo;Two-Pane Workbench&rdquo; &middot; persistent selection rail + results pane</div>
+
+  <div class="topbar">
+    <div class="brand"><span class="logo"></span> Release intelligence</div>
+    <div class="acts">
+      <span class="chip on">Prod &#9662;</span>
+      <button class="btn ghost">&#8635; Refresh</button>
+      <button class="btn ghost">&#9881; Settings</button>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="rail">
+      <div>
+        <span class="label">Base build</span>
+        <div class="field"><span>#20240612.3 <span class="hash">a1b3f9c</span></span><span class="dim">&#9662;</span></div>
+      </div>
+      <div>
+        <span class="label">Target build (newer)</span>
+        <div class="buildlist">
+          <div class="b on"><span class="trunc">#20240701.1 <span class="hash">7f21ed4</span></span><span class="badge ok">&#10003;</span></div>
+          <div class="b"><span class="trunc">#20240628.7 <span class="hash">bb02a19</span></span><span class="badge ok">&#10003;</span></div>
+          <div class="b"><span class="trunc">#20240624.2 <span class="hash">1d9f0aa</span></span><span class="badge err">&#10007;</span></div>
+          <div class="b"><span class="trunc">#20240621.5 <span class="hash">44c8e30</span></span><span class="badge ok">&#10003;</span></div>
+          <div class="b"><span class="trunc">#20240618.1 <span class="hash">e7719bc</span></span><span class="badge ok">&#10003;</span></div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="chip">scope: services/api</span>
+        <span class="chip">libs/*</span>
+      </div>
+      <button class="btn primary" style="justify-content:center">Analyze release &#9656;</button>
+      <hr>
+      <div>
+        <span class="label">Other comparisons</span>
+        <div class="field" style="margin-bottom:7px"><span>Compare to reference&hellip;</span><span class="dim">&#9662;</span></div>
+        <div class="field"><span>Environment drift&hellip;</span><span class="dim">&#9662;</span></div>
+      </div>
+    </div>
+
+    <div class="pane">
+      <div class="tabs">
+        <div class="tab on">Summary</div>
+        <div class="tab">Changes <span class="badge neutral">38</span></div>
+        <div class="tab">Files <span class="badge neutral">96</span></div>
+        <div class="tab">Share &amp; export</div>
+        <div class="tab">History</div>
+      </div>
+
+      <div class="metrics">
+        <div class="m risk"><b>MED &middot; 47</b><span>Release risk</span></div>
+        <div class="m"><b>12</b><span>Pull requests</span></div>
+        <div class="m"><b>38</b><span>Commits</span></div>
+        <div class="m"><b>96</b><span>Changed files</span></div>
+        <div class="m"><b>7</b><span>Contributors</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="sectitle">Risk signals</div>
+        <div class="card" style="display:flex;flex-direction:column;gap:6px">
+          <div class="row"><span class="badge warn">Migrations</span><span class="dim">2 database migration files are included in this release.</span></div>
+          <div class="row"><span class="badge warn">Config</span><span class="dim">Pipeline configuration changed since the base build.</span></div>
+          <div class="row"><span class="badge neutral">Volume</span><span class="dim">38 commits is above this pipeline&rsquo;s median of 21.</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sectitle">Changed areas</div>
+        <div class="row" style="flex-wrap:wrap">
+          <span class="chip on">All &middot; 96</span>
+          <span class="chip">services/api &middot; 41</span>
+          <span class="chip">libs/core &middot; 22</span>
+          <span class="chip">db/migrations &middot; 9</span>
+          <span class="chip">web/app &middot; 14</span>
+          <span class="chip">infra &middot; 10</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="row between" style="margin-bottom:7px">
+          <div class="sectitle" style="margin:0">Top changes</div>
+          <span class="muted" style="font-size:11px">View all in Changes &rarr;</span>
+        </div>
+        <div class="card" style="padding:4px 14px">
+          <div class="commit">
+            <div class="t"><a>PR #1420 &middot; Add retry to sync worker</a></div>
+            <div class="m">j.doe &middot; <span class="mono">a1b3f9c</span> &middot; 6 changed files</div>
+          </div>
+          <div class="commit">
+            <div class="t"><a>PR #1411 &middot; Migrate release table to new schema</a> <span class="badge warn">migration</span></div>
+            <div class="m">m.silva &middot; <span class="mono">9ab77c2</span> &middot; 11 changed files</div>
+          </div>
+          <div class="commit">
+            <div class="t"><span class="badge neutral">Direct commit</span> <span>Bump dependency versions</span></div>
+            <div class="m">build-bot &middot; <span class="mono">c0ffee1</span> &middot; 3 changed files</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
