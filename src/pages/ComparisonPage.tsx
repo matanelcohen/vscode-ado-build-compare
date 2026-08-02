@@ -13,6 +13,7 @@ import {
 } from "@fluentui/react-components";
 import { ArrowClockwiseRegular, SettingsRegular } from "@fluentui/react-icons";
 import { BuildSelector } from "../components/Comparison";
+import { BuildPageRedesignIdeas } from "../components/Comparison/BuildPageRedesignIdeas";
 import { useAuthAndConfig } from "../hooks/useAccessToken";
 import { useBuildData } from "../hooks/useBuildData";
 import { useCommitComparison } from "../hooks/useCommitComparison";
@@ -317,6 +318,7 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
         olderRun &&
         config && (
         <>
+          <BuildPageRedesignIdeas />
           <LatestDeploymentInfo
             run={baseBuild ?? olderRun}
             title={
