@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Release Lens for Azure DevOps — Live Demo</title>
+    <meta
+      name="description"
+      content="Interactive browser demo of the Release Lens for Azure DevOps VS Code extension, running on sample data."
+    />
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body class="demo-dark">
+    <header class="demo-header">
+      <div class="demo-header-text">
+        <h1>Release Lens for Azure DevOps</h1>
+        <p>Live demo with sample data — no Azure DevOps connection required.</p>
+      </div>
+      <div class="demo-header-actions">
+        <button id="demo-reload-sample" type="button">Reload sample</button>
+        <button id="demo-theme-toggle" type="button">Light theme</button>
+        <a
+          class="demo-link"
+          href="https://github.com/matanelcohen/vscode-ado-build-compare"
+          target="_blank"
+          rel="noreferrer noopener"
+          >GitHub</a
+        >
+      </div>
+    </header>
+    <main id="root"></main>
+    <script src="./demo.js"></script>
+  </body>
+</html>
