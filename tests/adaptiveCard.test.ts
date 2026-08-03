@@ -49,9 +49,23 @@ function comparison(): ComparisonResult {
 }
 
 test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
+  const result = comparison();
+  const directCommit = {
+    id: "abcdef1234567890",
+    message: "Document deployment recovery",
+    author: {
+      displayName: "Grace Hopper",
+      email: "grace@example.com",
+    },
+    files: [{ path: "/docs/recovery.md", changeType: "Add" }],
+  };
+  result.commits.push(directCommit);
+  result.directCommits.push(directCommit);
+  result.contributors.push(directCommit.author);
+
   const payload = buildTeamsWorkflowPayload({
     title: "Production release",
-    comparison: comparison(),
+    comparison: result,
     mentions: [
       { displayName: "Ada Lovelace", userId: "ada@example.com" },
       { displayName: "Ada Lovelace", userId: "ADA@example.com" },
@@ -93,6 +107,20 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
   assert.ok(
     payload.attachments[0]?.content.body.some((block) =>
       block.text?.includes("ReleaseLens")
+    )
+  );
+  assert.ok(
+    payload.attachments[0]?.content.body.some(
+      (block) =>
+        block.text?.includes("**Ada Lovelace**") &&
+        block.text.includes("1. [PR #42]")
+    )
+  );
+  assert.ok(
+    payload.attachments[0]?.content.body.some(
+      (block) =>
+        block.text?.includes("**Grace Hopper**") &&
+        block.text.includes("1. `abcdef1` Document deployment recovery")
     )
   );
   assert.ok(

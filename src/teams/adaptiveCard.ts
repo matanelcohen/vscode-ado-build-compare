@@ -54,11 +54,49 @@ function buildMentionText(mentions: TeamsMention[]): {
   };
 }
 
-function commitLine(commit: ComparedCommit): string {
+function commitLine(commit: ComparedCommit, index: number): string {
   const prefix = commit.pullRequest
     ? `[PR #${commit.pullRequest.id}](${commit.pullRequest.url})`
     : `\`${commit.id.slice(0, 7)}\``;
-  return `- ${prefix} ${commit.message.split("\n")[0] || "No commit message"}`;
+  const message = commit.message.split("\n")[0] || "No commit message";
+  return `${index}. ${prefix} ${message}`;
+}
+
+function buildAuthorChangeBlocks(
+  commits: ComparedCommit[]
+): Record<string, unknown>[] {
+  const groups = new Map<
+    string,
+    { displayName: string; commits: ComparedCommit[] }
+  >();
+  for (const commit of commits) {
+    const author = commit.pullRequest?.createdBy ?? commit.author;
+    const key = (
+      author.email ??
+      author.id ??
+      author.displayName
+    ).toLocaleLowerCase();
+    const group = groups.get(key);
+    if (group) {
+      group.commits.push(commit);
+    } else {
+      groups.set(key, {
+        displayName: author.displayName,
+        commits: [commit],
+      });
+    }
+  }
+
+  return [...groups.values()].map((group, groupIndex) => ({
+    type: "TextBlock",
+    text: [
+      `**${group.displayName}**`,
+      "",
+      ...group.commits.map((commit, index) => commitLine(commit, index + 1)),
+    ].join("\n"),
+    wrap: true,
+    separator: groupIndex > 0,
+  }));
 }
 
 export function buildTeamsWorkflowPayload(
@@ -69,11 +107,9 @@ export function buildTeamsWorkflowPayload(
   const buildUrl = comparison.targetBuild._links?.web?.href as
     | string
     | undefined;
-  const comparisonLines = comparison.commits.slice(0, 12).map(commitLine);
+  const displayedCommits = comparison.commits.slice(0, 12);
+  const changeBlocks = buildAuthorChangeBlocks(displayedCommits);
   const hiddenCount = Math.max(0, comparison.commits.length - 12);
-  if (hiddenCount > 0) {
-    comparisonLines.push(`- _...and ${hiddenCount} more changes_`);
-  }
 
   const body: Record<string, unknown>[] = [
     {
@@ -116,13 +152,24 @@ export function buildTeamsWorkflowPayload(
       separator: true,
       wrap: true,
     },
-    {
-      type: "TextBlock",
-      text:
-        comparisonLines.join("\n") ||
-        "No relevant changes were found for the configured path filters.",
-      wrap: true,
-    },
+    ...(changeBlocks.length > 0
+      ? changeBlocks
+      : [
+          {
+            type: "TextBlock",
+            text: "No relevant changes were found for the configured path filters.",
+            wrap: true,
+          },
+        ]),
+    ...(hiddenCount > 0
+      ? [
+          {
+            type: "TextBlock",
+            text: `_...and ${hiddenCount} more changes_`,
+            wrap: true,
+          },
+        ]
+      : []),
   ];
 
   if (mentionData.text) {

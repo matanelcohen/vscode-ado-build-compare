@@ -2,6 +2,13 @@
 
 All notable changes to ReleaseLens for Azure DevOps are documented here.
 
+## [3.2.1] - 2026-08-03
+
+### Changed
+
+- Group Teams Adaptive Card changes by author and number each contributor's
+  pull requests and direct commits.
+
 ## [3.2.0] - 2026-08-02
 
 ### Added
