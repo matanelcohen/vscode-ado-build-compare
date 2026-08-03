@@ -2,6 +2,13 @@
 
 All notable changes to ReleaseLens for Azure DevOps are documented here.
 
+## [3.3.1] - 2026-08-03
+
+### Changed
+
+- Render selected Teams mentions directly in the matching author heading while
+  leaving unselected contributor names as plain text.
+
 ## [3.3.0] - 2026-08-03
 
 ### Changed

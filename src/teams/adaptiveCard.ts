@@ -30,9 +30,9 @@ export function isSupportedTeamsMentionId(value: string): boolean {
   );
 }
 
-function buildMentionText(mentions: TeamsMention[]): {
-  text: string;
+function buildMentionData(mentions: TeamsMention[]): {
   entities: AdaptiveCardMentionEntity[];
+  mentions: TeamsMention[];
 } {
   const unique = new Map<string, TeamsMention>();
   for (const mention of mentions) {
@@ -43,7 +43,7 @@ function buildMentionText(mentions: TeamsMention[]): {
 
   const values = [...unique.values()];
   return {
-    text: values.map((mention) => `<at>${mention.displayName}</at>`).join(" "),
+    mentions: values,
     entities: values.map((mention) => ({
       type: "mention" as const,
       text: `<at>${mention.displayName}</at>`,
@@ -64,30 +64,62 @@ function commitLine(commit: ComparedCommit, index: number): string {
 }
 
 function buildAuthorChangeBlocks(
-  commits: ComparedCommit[]
-): Record<string, unknown>[] {
-  return groupCommitsByAuthor(commits).map((group, groupIndex) => ({
-    type: "TextBlock",
-    text: [
-      `**${group.author.displayName}**`,
-      "",
-      ...group.commits.map((commit, index) => commitLine(commit, index + 1)),
-    ].join("\n"),
-    wrap: true,
-    separator: groupIndex > 0,
-  }));
+  commits: ComparedCommit[],
+  mentions: TeamsMention[]
+): {
+  blocks: Record<string, unknown>[];
+  placedMentionIds: Set<string>;
+} {
+  const placedMentionIds = new Set<string>();
+  const blocks = groupCommitsByAuthor(commits).map((group, groupIndex) => {
+    const authorEmail = group.author.email?.toLocaleLowerCase();
+    const authorName = group.author.displayName.toLocaleLowerCase();
+    const mention = mentions.find(
+      (candidate) =>
+        (authorEmail &&
+          candidate.userId.toLocaleLowerCase() === authorEmail) ||
+        candidate.displayName.toLocaleLowerCase() === authorName
+    );
+    if (mention) {
+      placedMentionIds.add(mention.userId.toLocaleLowerCase());
+    }
+    const displayName = mention
+      ? `<at>${mention.displayName}</at>`
+      : group.author.displayName;
+    return {
+      type: "TextBlock",
+      text: [
+        `**${displayName}**`,
+        "",
+        ...group.commits.map((commit, index) => commitLine(commit, index + 1)),
+      ].join("\n"),
+      wrap: true,
+      separator: groupIndex > 0,
+    };
+  });
+  return { blocks, placedMentionIds };
 }
 
 export function buildTeamsWorkflowPayload(
   request: TeamsShareRequest
 ): Record<string, unknown> {
   const { comparison } = request;
-  const mentionData = buildMentionText(request.mentions);
+  const mentionData = buildMentionData(request.mentions);
   const buildUrl = comparison.targetBuild._links?.web?.href as
     | string
     | undefined;
   const displayedCommits = comparison.commits.slice(0, 12);
-  const changeBlocks = buildAuthorChangeBlocks(displayedCommits);
+  const { blocks: changeBlocks, placedMentionIds } = buildAuthorChangeBlocks(
+    displayedCommits,
+    mentionData.mentions
+  );
+  const unplacedMentionText = mentionData.mentions
+    .filter(
+      (mention) =>
+        !placedMentionIds.has(mention.userId.toLocaleLowerCase())
+    )
+    .map((mention) => `<at>${mention.displayName}</at>`)
+    .join(" ");
   const hiddenCount = Math.max(0, comparison.commits.length - 12);
 
   const body: Record<string, unknown>[] = [
@@ -151,10 +183,10 @@ export function buildTeamsWorkflowPayload(
       : []),
   ];
 
-  if (mentionData.text) {
+  if (unplacedMentionText) {
     body.push({
       type: "TextBlock",
-      text: mentionData.text,
+      text: unplacedMentionText,
       wrap: true,
       separator: true,
     });

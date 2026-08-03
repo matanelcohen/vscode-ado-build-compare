@@ -112,9 +112,15 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
   assert.ok(
     payload.attachments[0]?.content.body.some(
       (block) =>
-        block.text?.includes("**Ada Lovelace**") &&
+        block.text?.includes("**<at>Ada Lovelace</at>**") &&
         block.text.includes("1. [PR #42]")
     )
+  );
+  assert.equal(
+    payload.attachments[0]?.content.body.some(
+      (block) => block.text === "<at>Ada Lovelace</at>"
+    ),
+    false
   );
   assert.ok(
     payload.attachments[0]?.content.body.some(
