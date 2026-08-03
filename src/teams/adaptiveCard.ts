@@ -4,6 +4,7 @@ import {
   TeamsShareRequest,
 } from "../models/comparison";
 import { marketplaceUrl, productName } from "../product";
+import { groupCommitsByAuthor } from "../utils/groupChanges";
 
 interface AdaptiveCardMentionEntity {
   type: "mention";
@@ -65,32 +66,10 @@ function commitLine(commit: ComparedCommit, index: number): string {
 function buildAuthorChangeBlocks(
   commits: ComparedCommit[]
 ): Record<string, unknown>[] {
-  const groups = new Map<
-    string,
-    { displayName: string; commits: ComparedCommit[] }
-  >();
-  for (const commit of commits) {
-    const author = commit.pullRequest?.createdBy ?? commit.author;
-    const key = (
-      author.email ??
-      author.id ??
-      author.displayName
-    ).toLocaleLowerCase();
-    const group = groups.get(key);
-    if (group) {
-      group.commits.push(commit);
-    } else {
-      groups.set(key, {
-        displayName: author.displayName,
-        commits: [commit],
-      });
-    }
-  }
-
-  return [...groups.values()].map((group, groupIndex) => ({
+  return groupCommitsByAuthor(commits).map((group, groupIndex) => ({
     type: "TextBlock",
     text: [
-      `**${group.displayName}**`,
+      `**${group.author.displayName}**`,
       "",
       ...group.commits.map((commit, index) => commitLine(commit, index + 1)),
     ].join("\n"),

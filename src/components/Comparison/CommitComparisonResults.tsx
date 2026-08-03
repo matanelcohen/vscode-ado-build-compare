@@ -20,6 +20,7 @@ import {
   isPathWithinScope,
   summarizeFileHotspots,
 } from "../../utils/comparison";
+import { groupCommitsByAuthor } from "../../utils/groupChanges";
 
 interface CommitComparisonResultsProps {
   result: ComparisonResult;
@@ -51,6 +52,24 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     rowGap: tokens.spacingVerticalM,
+  },
+  authorGroup: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: tokens.spacingVerticalS,
+  },
+  authorHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
+  authorChanges: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: tokens.spacingVerticalM,
+    marginTop: 0,
+    marginBottom: 0,
+    paddingLeft: tokens.spacingHorizontalXL,
   },
   item: {
     display: "flex",
@@ -172,6 +191,7 @@ export const CommitComparisonResults: React.FC<
         return [
           commit.message,
           commit.author.displayName,
+          commit.pullRequest?.createdBy.displayName,
           commit.pullRequest?.title,
           commit.pullRequest?.id.toString(),
           ...commit.files.map((file) => file.path),
@@ -182,6 +202,10 @@ export const CommitComparisonResults: React.FC<
     [commitKind, normalizedQuery, scopedCommits]
   );
   const visibleCommits = filteredCommits.slice(0, visibleLimit);
+  const visibleGroups = React.useMemo(
+    () => groupCommitsByAuthor(visibleCommits),
+    [visibleCommits]
+  );
   const directCommitCount = React.useMemo(
     () => scopedCommits.filter((commit) => !commit.pullRequest).length,
     [scopedCommits]
@@ -343,43 +367,60 @@ export const CommitComparisonResults: React.FC<
             </Caption1>
           </div>
           <div className={styles.list}>
-            {visibleCommits.map((commit, index) => (
-              <React.Fragment key={commit.id}>
-                {index > 0 && <Divider />}
-                <div className={styles.item}>
-                  <div className={styles.itemHeader}>
-                    {commit.pullRequest ? (
-                      <Link
-                        href={commit.pullRequest.url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        PR #{commit.pullRequest.id}: {commit.pullRequest.title}
-                      </Link>
-                    ) : (
-                      <>
-                        <Badge appearance="outline">Direct commit</Badge>
-                        <Body1>{commit.message.split("\n")[0]}</Body1>
-                      </>
-                    )}
+            {visibleGroups.map((group, groupIndex) => (
+              <React.Fragment key={group.key}>
+                {groupIndex > 0 && <Divider />}
+                <section className={styles.authorGroup}>
+                  <div className={styles.authorHeader}>
+                    <Text weight="semibold">{group.author.displayName}</Text>
+                    <Badge appearance="tint">{group.commits.length}</Badge>
                   </div>
-                  <Caption1 className={styles.metadata}>
-                    {commit.author.displayName} · {commit.id.slice(0, 7)} ·{" "}
-                    {commit.files.length} changed{" "}
-                    {commit.files.length === 1 ? "file" : "files"}
-                  </Caption1>
-                  {commit.files.length > 0 && (
-                    <Caption1 className={styles.files}>
-                      {commit.files
-                        .slice(0, 4)
-                        .map((file) => file.path)
-                        .join(" · ")}
-                      {commit.files.length > 4
-                        ? ` · +${commit.files.length - 4} more`
-                        : ""}
-                    </Caption1>
-                  )}
-                </div>
+                  <ol className={styles.authorChanges}>
+                    {group.commits.map((commit) => (
+                      <li key={commit.id}>
+                        <div className={styles.item}>
+                          <div className={styles.itemHeader}>
+                            {commit.pullRequest ? (
+                              <Link
+                                href={commit.pullRequest.url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                PR #{commit.pullRequest.id}:{" "}
+                                {commit.pullRequest.title}
+                              </Link>
+                            ) : (
+                              <>
+                                <Badge appearance="outline">
+                                  Direct commit
+                                </Badge>
+                                <Body1>
+                                  {commit.message.split("\n")[0]}
+                                </Body1>
+                              </>
+                            )}
+                          </div>
+                          <Caption1 className={styles.metadata}>
+                            {commit.id.slice(0, 7)} · {commit.files.length}{" "}
+                            changed{" "}
+                            {commit.files.length === 1 ? "file" : "files"}
+                          </Caption1>
+                          {commit.files.length > 0 && (
+                            <Caption1 className={styles.files}>
+                              {commit.files
+                                .slice(0, 4)
+                                .map((file) => file.path)
+                                .join(" · ")}
+                              {commit.files.length > 4
+                                ? ` · +${commit.files.length - 4} more`
+                                : ""}
+                            </Caption1>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               </React.Fragment>
             ))}
             {visibleCommits.length === 0 && (

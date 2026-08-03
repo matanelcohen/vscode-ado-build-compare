@@ -2,6 +2,13 @@
 
 All notable changes to ReleaseLens for Azure DevOps are documented here.
 
+## [3.3.0] - 2026-08-03
+
+### Changed
+
+- Group and number release changes by author throughout the VS Code Changes
+  and Report views, matching the Teams Adaptive Card presentation.
+
 ## [3.2.1] - 2026-08-03
 
 ### Changed

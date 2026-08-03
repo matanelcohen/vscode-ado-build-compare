@@ -26,6 +26,7 @@ import { ReportActions } from "../../components/Comparison/ReportActions";
 import { ComparisonHistory } from "../../components/Comparison/ComparisonHistory";
 import { ReferenceComparison } from "../../components/Comparison/ReferenceComparison";
 import { summarizeFileHotspots } from "../../utils/comparison";
+import { groupCommitsByAuthor } from "../../utils/groupChanges";
 import { SkinProps } from "./types";
 
 const useStyles = makeStyles({
@@ -95,6 +96,25 @@ const useStyles = makeStyles({
     maxHeight: "360px",
     overflowY: "auto",
   },
+  authorGroup: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: tokens.spacingVerticalXS,
+    ...shorthands.padding(tokens.spacingVerticalS, "0"),
+  },
+  authorHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
+  authorChanges: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: tokens.spacingVerticalXS,
+    marginTop: 0,
+    marginBottom: 0,
+    paddingLeft: tokens.spacingHorizontalXL,
+  },
   spinner: {
     alignSelf: "center",
     paddingBlock: tokens.spacingVerticalL,
@@ -154,8 +174,8 @@ export const ReportSkin: React.FC<SkinProps> = ({ workspace }) => {
     () => (result ? summarizeFileHotspots(result.files, 12) : []),
     [result]
   );
-  const directCommits = React.useMemo(
-    () => (result ? result.commits.filter((commit) => !commit.pullRequest) : []),
+  const authorGroups = React.useMemo(
+    () => (result ? groupCommitsByAuthor(result.commits) : []),
     [result]
   );
 
@@ -240,49 +260,47 @@ export const ReportSkin: React.FC<SkinProps> = ({ workspace }) => {
           <Accordion collapsible multiple defaultOpenItems={["pullRequests"]}>
             <AccordionItem value="pullRequests">
               <AccordionHeader>
-                Pull requests ({result.pullRequests.length})
+                Changes by contributor ({result.commits.length})
               </AccordionHeader>
               <AccordionPanel>
                 <div className={styles.scroll}>
-                  {result.pullRequests.map((pullRequest) => (
-                    <div className={styles.row} key={pullRequest.id}>
-                      <Link
-                        className={styles.rowMain}
-                        href={pullRequest.url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        #{pullRequest.id} {pullRequest.title}
-                      </Link>
-                      <Caption1>{pullRequest.createdBy.displayName}</Caption1>
+                  {authorGroups.map((group) => (
+                    <div className={styles.authorGroup} key={group.key}>
+                      <div className={styles.authorHeader}>
+                        <Text weight="semibold">
+                          {group.author.displayName}
+                        </Text>
+                        <Badge appearance="tint">
+                          {group.commits.length}
+                        </Badge>
+                      </div>
+                      <ol className={styles.authorChanges}>
+                        {group.commits.map((commit) => (
+                          <li key={commit.id}>
+                            {commit.pullRequest ? (
+                              <Link
+                                href={commit.pullRequest.url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                PR #{commit.pullRequest.id}:{" "}
+                                {commit.pullRequest.title}
+                              </Link>
+                            ) : (
+                              <Caption1>
+                                <span className={styles.mono}>
+                                  {commit.id.slice(0, 7)}
+                                </span>{" "}
+                                {commit.message.split("\n")[0]}
+                              </Caption1>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
                     </div>
                   ))}
-                  {result.pullRequests.length === 0 && (
-                    <Caption1>No pull requests in this range.</Caption1>
-                  )}
-                </div>
-              </AccordionPanel>
-            </AccordionItem>
-
-            <AccordionItem value="directCommits">
-              <AccordionHeader>
-                Direct commits ({directCommits.length})
-              </AccordionHeader>
-              <AccordionPanel>
-                <div className={styles.scroll}>
-                  {directCommits.map((commit) => (
-                    <div className={styles.row} key={commit.id}>
-                      <Caption1 className={styles.rowMain}>
-                        <span className={styles.mono}>
-                          {commit.id.slice(0, 7)}
-                        </span>{" "}
-                        {commit.message.split("\n")[0]}
-                      </Caption1>
-                      <Caption1>{commit.author.displayName}</Caption1>
-                    </div>
-                  ))}
-                  {directCommits.length === 0 && (
-                    <Caption1>No direct commits in this range.</Caption1>
+                  {authorGroups.length === 0 && (
+                    <Caption1>No changes in this range.</Caption1>
                   )}
                 </div>
               </AccordionPanel>
