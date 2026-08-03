@@ -269,6 +269,8 @@
     "compile-extension-watch": "webpack --mode development --watch",
     "compile-webview-watch": "webpack --config webpack.webview.config.js --mode development --watch",
     "package": "vsce package --no-dependencies",
+    "build:demo": "webpack --config webpack.demo.config.js --mode production && node scripts/copy-demo-assets.js",
+    "build:demo-dev": "webpack --config webpack.demo.config.js --mode development && node scripts/copy-demo-assets.js",
     "analyze-bundle": "webpack-bundle-analyzer out/extension.js",
     "lint": "eslint src --ext ts,tsx",
     "lint:fix": "eslint src --ext ts,tsx --fix",
