@@ -41,14 +41,14 @@ export function parseProfileImport(
   now = new Date().toISOString()
 ): PipelineProfile[] {
   if (!value || typeof value !== "object") {
-    throw new Error("The selected file is not a ReleaseLens profile export.");
+    throw new Error("The selected file is not a Release Lens profile export.");
   }
   const source = value as {
     schemaVersion?: unknown;
     profiles?: unknown;
   };
   if (source.schemaVersion !== 1 || !Array.isArray(source.profiles)) {
-    throw new Error("Unsupported ReleaseLens profile file format.");
+    throw new Error("Unsupported Release Lens profile file format.");
   }
   if (source.profiles.length === 0) {
     throw new Error("The profile file does not contain any profiles.");

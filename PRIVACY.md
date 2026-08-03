@@ -1,6 +1,6 @@
-# ReleaseLens privacy
+# Release Lens privacy
 
-ReleaseLens is designed to keep organizational data inside the user's trusted
+Release Lens is designed to keep organizational data inside the user's trusted
 tools.
 
 ## Data processed
@@ -14,7 +14,7 @@ tools.
 
 ## Data not collected
 
-ReleaseLens does not operate a hosted backend, collect product analytics, sell
+Release Lens does not operate a hosted backend, collect product analytics, sell
 data, or send Azure DevOps access tokens to the webview. The publisher cannot
 access profile configuration, comparison history, tokens, or webhook URLs.
 

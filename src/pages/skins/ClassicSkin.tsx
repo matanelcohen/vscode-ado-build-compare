@@ -46,7 +46,7 @@ const useStyles = makeStyles({
   },
 });
 
-/** The original ReleaseLens layout, kept as a selectable skin. */
+/** The original Release Lens layout, kept as a selectable skin. */
 export const ClassicSkin: React.FC<SkinProps> = ({ workspace }) => {
   const styles = useStyles();
   const {

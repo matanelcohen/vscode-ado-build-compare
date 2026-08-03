@@ -104,10 +104,11 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
       block.text?.includes("<at>Ada Lovelace</at>")
     )
   );
-  assert.ok(
+  assert.equal(
     payload.attachments[0]?.content.body.some((block) =>
-      block.text?.includes("ReleaseLens")
-    )
+      block.text?.includes("Created with")
+    ),
+    false
   );
   assert.ok(
     payload.attachments[0]?.content.body.some(
@@ -131,7 +132,7 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
   );
   assert.ok(
     payload.attachments[0]?.content.actions.some(
-      (action) => action.title === "Get ReleaseLens"
+      (action) => action.title === "Get Release Lens"
     )
   );
 });

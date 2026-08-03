@@ -51,8 +51,8 @@ export function openSetupPanel(
   const panel = vscode.window.createWebviewPanel(
     "releaseLensSetup",
     options.mode === "edit"
-      ? "ReleaseLens · Edit Pipeline Profile"
-      : "ReleaseLens · Guided Setup",
+      ? "Release Lens · Edit Pipeline Profile"
+      : "Release Lens · Guided Setup",
     vscode.ViewColumn.Active,
     {
       enableScripts: true,

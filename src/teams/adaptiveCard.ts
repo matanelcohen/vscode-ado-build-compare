@@ -3,7 +3,7 @@ import {
   TeamsMention,
   TeamsShareRequest,
 } from "../models/comparison";
-import { marketplaceUrl, productName } from "../product";
+import { marketplaceUrl } from "../product";
 import { groupCommitsByAuthor } from "../utils/groupChanges";
 
 interface AdaptiveCardMentionEntity {
@@ -191,15 +191,6 @@ export function buildTeamsWorkflowPayload(
       separator: true,
     });
   }
-  body.push({
-    type: "TextBlock",
-    text: `Created with [${productName}](${marketplaceUrl})`,
-    size: "Small",
-    isSubtle: true,
-    separator: true,
-    wrap: true,
-  });
-
   const actions = [
     ...(buildUrl
       ? [
@@ -212,7 +203,7 @@ export function buildTeamsWorkflowPayload(
       : []),
     {
       type: "Action.OpenUrl",
-      title: "Get ReleaseLens",
+      title: "Get Release Lens",
       url: marketplaceUrl,
     },
   ];

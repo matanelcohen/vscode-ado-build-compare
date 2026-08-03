@@ -1,5 +1,5 @@
 name: Product feedback
-description: Suggest an improvement to ReleaseLens
+description: Suggest an improvement to Release Lens
 title: "[Feedback] "
 labels:
   - feedback
@@ -20,7 +20,7 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: What problem should ReleaseLens solve better?
+      label: What problem should Release Lens solve better?
       placeholder: Describe the workflow and desired outcome.
     validations:
       required: true

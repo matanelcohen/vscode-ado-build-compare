@@ -1,8 +1,8 @@
 {
   "name": "fe-ninja-tools",
-  "displayName": "ReleaseLens for Azure DevOps",
+  "displayName": "Release Lens for Azure DevOps",
   "description": "See what changed, assess deployment risk, and publish release intelligence from Azure DevOps.",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "publisher": "matancohenmsft",
   "license": "MIT",
   "icon": "media/releaselens.png",
@@ -48,78 +48,78 @@
       {
         "command": "fe-ninja-tools.showPipelines",
         "title": "Open Release Workspace",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(compare-changes)"
       },
       {
         "command": "fe-ninja-tools.openDemo",
         "title": "Explore Sample Release",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(preview)"
       },
       {
         "command": "fe-ninja-tools.refresh",
         "title": "Refresh",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(refresh)"
       },
       {
         "command": "fe-ninja-tools.openSettings",
-        "title": "Open ReleaseLens Settings",
+        "title": "Open Release Lens Settings",
         "icon": "$(settings-gear)"
       },
       {
         "command": "fe-ninja-tools.configureTeams",
         "title": "Configure Teams Workflow",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(comment-discussion)"
       },
       {
         "command": "fe-ninja-tools.setupProfile",
         "title": "Add Pipeline Profile",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(add)"
       },
       {
         "command": "fe-ninja-tools.switchProfile",
         "title": "Switch Pipeline Profile",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(list-selection)"
       },
       {
         "command": "fe-ninja-tools.deleteProfile",
         "title": "Delete Pipeline Profile",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(trash)"
       },
       {
         "command": "fe-ninja-tools.editProfile",
         "title": "Edit Pipeline Profile",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(edit)"
       },
       {
         "command": "fe-ninja-tools.sendFeedback",
         "title": "Send Feedback",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(feedback)"
       },
       {
         "command": "fe-ninja-tools.openPrivacy",
         "title": "View Privacy & Security",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(shield)"
       },
       {
         "command": "fe-ninja-tools.manageProfiles",
         "title": "Import or Export Pipeline Profiles",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(cloud-download)"
       },
       {
         "command": "fe-ninja-tools.copyDiagnostics",
         "title": "Copy Safe Diagnostics",
-        "category": "ReleaseLens",
+        "category": "Release Lens",
         "icon": "$(copy)"
       }
     ],
@@ -127,7 +127,7 @@
       "activitybar": [
         {
           "id": "build-compare-tools",
-          "title": "ReleaseLens",
+          "title": "Release Lens",
           "icon": "media/releaselens-activity.svg"
         }
       ]
@@ -193,7 +193,7 @@
       ]
     },
     "configuration": {
-      "title": "ReleaseLens",
+      "title": "Release Lens",
       "properties": {
         "buildCompareTools.organizationUrl": {
           "type": "string",
@@ -230,7 +230,7 @@
     "walkthroughs": [
       {
         "id": "releaselens.getStarted",
-        "title": "Get started with ReleaseLens",
+        "title": "Get started with Release Lens",
         "description": "Reach your first release insight in under a minute.",
         "steps": [
           {

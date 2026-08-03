@@ -11,7 +11,7 @@ export function getWebviewContent(
     vscode.Uri.joinPath(extensionUri, "out", "webview.js")
   );
   const nonce = getNonce();
-  const title = view === "setup" ? "ReleaseLens Setup" : "ReleaseLens";
+  const title = view === "setup" ? "Release Lens Setup" : "Release Lens";
   return `<!DOCTYPE html>
         <html lang="en">
         <head>

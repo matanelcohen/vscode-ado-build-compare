@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible ReleaseLens problem
+description: Report a reproducible Release Lens problem
 title: "[Bug] "
 labels:
   - bug
@@ -7,7 +7,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: ReleaseLens version
+      label: Release Lens version
       placeholder: 3.0.0
     validations:
       required: true

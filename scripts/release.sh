@@ -38,7 +38,7 @@ if [[ "$CURRENT_VERSION" != "$VERSION" ]]; then
   git commit -m "chore: release $TAG" \
     -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 fi
-git tag -a "$TAG" -m "ReleaseLens $VERSION"
+git tag -a "$TAG" -m "Release Lens $VERSION"
 git push --atomic origin main "$TAG"
 
 echo "Release workflow started: https://github.com/matanelcohen/vscode-ado-build-compare/actions"

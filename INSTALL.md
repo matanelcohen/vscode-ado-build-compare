@@ -1,12 +1,12 @@
-# Install ReleaseLens
+# Install Release Lens
 
 ## VS Code Marketplace
 
 1. Open Extensions in VS Code.
-2. Search for `ReleaseLens for Azure DevOps` or
+2. Search for `Release Lens for Azure DevOps` or
    `matancohenmsft.fe-ninja-tools`.
 3. Select **Install**.
-4. Open the ReleaseLens icon in the Activity Bar.
+4. Open the Release Lens icon in the Activity Bar.
 5. Choose **Explore sample release** or **Connect Azure DevOps**.
 
 ## VSIX
@@ -17,7 +17,7 @@ https://github.com/matanelcohen/vscode-ado-build-compare/releases, then run
 
 ## Authentication
 
-ReleaseLens uses VS Code's Microsoft authentication provider. It does not ask
+Release Lens uses VS Code's Microsoft authentication provider. It does not ask
 for or store an Azure DevOps Personal Access Token.
 
 During guided setup, select the organization, project, repository, pipeline,
@@ -27,7 +27,7 @@ named profile in VS Code.
 ## Teams
 
 Create a Teams Workflow with the **When a Teams webhook request is received**
-trigger. Run **ReleaseLens: Configure Teams Workflow** and paste the HTTPS
+trigger. Run **Release Lens: Configure Teams Workflow** and paste the HTTPS
 trigger URL. The URL is stored in VS Code SecretStorage.
 
 ## Troubleshooting
@@ -39,5 +39,5 @@ trigger URL. The URL is stored in VS Code SecretStorage.
 - **Teams send failed:** Confirm the Workflow is enabled and still accepts
   webhook requests.
 
-Use **ReleaseLens: Copy Safe Diagnostics** when filing an issue. It excludes
+Use **Release Lens: Copy Safe Diagnostics** when filing an issue. It excludes
 tokens, webhook URLs, repository names, project names, and comparison data.

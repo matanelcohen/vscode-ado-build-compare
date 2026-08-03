@@ -25,7 +25,7 @@
     <path d="m74 81 4 4 8-9" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
-  <text x="74" y="237" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="54" font-weight="700">ReleaseLens</text>
+  <text x="74" y="237" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="54" font-weight="700">Release Lens</text>
   <text x="74" y="286" fill="#cbd5e1" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="27">Know what changed before you deploy.</text>
 
   <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="19" fill="#e2e8f0">
@@ -53,7 +53,7 @@
     <circle cx="25" cy="24" r="6" fill="#fb7185"/>
     <circle cx="46" cy="24" r="6" fill="#fbbf24"/>
     <circle cx="67" cy="24" r="6" fill="#4ade80"/>
-    <text x="98" y="31" fill="#cbd5e1" font-size="15">ReleaseLens — release/2026.08</text>
+    <text x="98" y="31" fill="#cbd5e1" font-size="15">Release Lens — release/2026.08</text>
 
     <text x="28" y="90" fill="#fff" font-size="24" font-weight="650">Production release briefing</text>
     <text x="28" y="119" fill="#94a3b8" font-size="14">build 18421 → build 18507 · analyzed in 1.8s</text>

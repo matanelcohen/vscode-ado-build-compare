@@ -66,7 +66,7 @@ export function buildDashboardRows(
     {
       id: "feedback",
       label: "Send feedback",
-      description: "Help shape ReleaseLens",
+      description: "Help shape Release Lens",
       icon: "feedback",
       command: "fe-ninja-tools.sendFeedback",
     },

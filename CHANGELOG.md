@@ -1,6 +1,15 @@
 # Changelog
 
-All notable changes to ReleaseLens for Azure DevOps are documented here.
+All notable changes to Release Lens for Azure DevOps are documented here.
+
+## [3.4.0] - 2026-08-03
+
+### Changed
+
+- Standardize the visible product name as **Release Lens** across VS Code,
+  Marketplace metadata, documentation, and release automation.
+- Remove the redundant Teams card attribution link while retaining the
+  **Get Release Lens** action button.
 
 ## [3.3.1] - 2026-08-03
 
@@ -69,7 +78,7 @@ All notable changes to ReleaseLens for Azure DevOps are documented here.
 ### Fixed
 
 - Removed an unsupported Marketplace category that blocked publication of the
-  ReleaseLens 3.0 package.
+  Release Lens 3.0 package.
 
 ## [3.0.0] - 2026-08-02
 
@@ -81,7 +90,7 @@ All notable changes to ReleaseLens for Azure DevOps are documented here.
   support diagnostics.
 - Validated profile import and export for sharing team setup without tokens,
   webhook URLs, or enabled automation.
-- ReleaseLens attribution and installation links in Teams cards and Markdown
+- Release Lens attribution and installation links in Teams cards and Markdown
   exports.
 - Product privacy, security, installation, feedback, and bug-report
   documentation.
@@ -90,7 +99,7 @@ All notable changes to ReleaseLens for Azure DevOps are documented here.
 
 ### Changed
 
-- Rebranded the product as ReleaseLens while preserving the existing extension
+- Rebranded the product as Release Lens while preserving the existing extension
   ID, settings, and stored profile compatibility.
 - Avoid authentication prompts until a real Azure DevOps action requires
   access.

@@ -202,7 +202,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
     if (snapshot.activeProfile) {
       statusBar.text = `$(compare-changes) ${snapshot.activeProfile.name}`;
-      statusBar.tooltip = `ReleaseLens · ${snapshot.activeProfile.config.targetStageName}`;
+      statusBar.tooltip = `Release Lens · ${snapshot.activeProfile.config.targetStageName}`;
       statusBar.show();
     } else {
       statusBar.hide();
@@ -463,7 +463,7 @@ export function activate(context: vscode.ExtensionContext) {
       async () => {
         const snapshot = profileStore.getSnapshot();
         const diagnostics = {
-          product: "ReleaseLens for Azure DevOps",
+          product: "Release Lens for Azure DevOps",
           extensionVersion:
             vscode.extensions.getExtension(
               "matancohenmsft.fe-ninja-tools"
@@ -481,7 +481,7 @@ export function activate(context: vscode.ExtensionContext) {
           JSON.stringify(diagnostics, null, 2)
         );
         vscode.window.showInformationMessage(
-          "Safe ReleaseLens diagnostics copied."
+          "Safe Release Lens diagnostics copied."
         );
       }
     ),
@@ -497,12 +497,12 @@ export function activate(context: vscode.ExtensionContext) {
             },
             {
               label: "$(import) Import profiles",
-              description: "Add profiles from a ReleaseLens JSON file",
+              description: "Add profiles from a Release Lens JSON file",
               action: "import",
             },
           ],
           {
-            title: "Share ReleaseLens team setup",
+            title: "Share Release Lens team setup",
             placeHolder: "Choose an action",
           }
         );
@@ -518,7 +518,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
           const target = await vscode.window.showSaveDialog({
-            title: "Export ReleaseLens profiles",
+            title: "Export Release Lens profiles",
             defaultUri: vscode.Uri.file("releaselens-profiles.json"),
             filters: { JSON: ["json"] },
           });
@@ -534,7 +534,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const sources = await vscode.window.showOpenDialog({
-          title: "Import ReleaseLens profiles",
+          title: "Import Release Lens profiles",
           canSelectMany: false,
           filters: { JSON: ["json"] },
         });
@@ -555,7 +555,7 @@ export function activate(context: vscode.ExtensionContext) {
         await refreshChrome();
         currentPanel?.webview.postMessage({ command: "profilesChanged" });
         vscode.window.showInformationMessage(
-          `Imported ${imported.length} ReleaseLens profile${
+          `Imported ${imported.length} Release Lens profile${
             imported.length === 1 ? "" : "s"
           }.`
         );
@@ -576,7 +576,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       currentPanel = vscode.window.createWebviewPanel(
         "gaiaToolsReport",
-        "ReleaseLens · Release Intelligence",
+        "Release Lens · Release Intelligence",
         column || vscode.ViewColumn.One,
         {
           enableScripts: true,

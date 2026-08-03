@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="media/releaselens.png" width="128" alt="ReleaseLens logo">
+  <img src="media/releaselens.png" width="128" alt="Release Lens logo">
 </p>
 
-<h1 align="center">ReleaseLens for Azure DevOps</h1>
+<h1 align="center">Release Lens for Azure DevOps</h1>
 
 <p align="center">
   Know what changed. Understand deployment risk. Publish release intelligence.
@@ -24,25 +24,25 @@
 </p>
 
 <p align="center">
-  <img src="media/marketplace-hero.png" width="900" alt="ReleaseLens release briefing with commit, pull request, file, risk, and hotspot insights">
+  <img src="media/marketplace-hero.png" width="900" alt="Release Lens release briefing with commit, pull request, file, risk, and hotspot insights">
 </p>
 
-ReleaseLens turns Azure DevOps pipeline history into a release briefing inside
+Release Lens turns Azure DevOps pipeline history into a release briefing inside
 VS Code. Compare any two builds, branches, tags, or environments and get the
 pull requests, direct commits, contributors, changed files, hotspots, and
 deployment risk in one place.
 
 ## Reach value in 30 seconds
 
-1. Install ReleaseLens.
-2. Open the ReleaseLens icon in the Activity Bar.
+1. Install Release Lens.
+2. Open the Release Lens icon in the Activity Bar.
 3. Select **Explore sample release**—no account or setup required.
 4. When ready, select **Connect Azure DevOps** and follow guided discovery.
 
-ReleaseLens uses VS Code's Microsoft sign-in. No Azure DevOps PAT is requested
+Release Lens uses VS Code's Microsoft sign-in. No Azure DevOps PAT is requested
 or stored.
 
-## Why teams use ReleaseLens
+## Why teams use Release Lens
 
 - **Accurate comparisons** based on Git ancestry, not timestamps.
 - **Release risk** for infrastructure, database, security, configuration,
@@ -101,7 +101,7 @@ discovers, step by step:
 6. Optional relevant paths and automatic Teams updates
 
 <p align="center">
-  <img src="docs/images/onboarding-connect.png" width="900" alt="ReleaseLens guided setup page with the five onboarding steps before any connection">
+  <img src="docs/images/onboarding-connect.png" width="900" alt="Release Lens guided setup page with the five onboarding steps before any connection">
 </p>
 
 Enter your organization URL and select **Discover projects**; each following
@@ -136,7 +136,7 @@ imported once for backward compatibility.
 ## Sharing with Microsoft Teams
 
 Create a Teams Workflow using **When a Teams webhook request is received**, then
-run **ReleaseLens: Configure Teams Workflow**. Workflow URLs are stored in
+run **Release Lens: Configure Teams Workflow**. Workflow URLs are stored in
 SecretStorage and never sent to the webview.
 
 Automatic Teams checks are opt-in and run only while VS Code is active. Assign
@@ -144,7 +144,7 @@ workflow co-owners so notifications do not depend on one account.
 
 ## Permissions and privacy
 
-ReleaseLens requests Azure DevOps code/build access through VS Code's Microsoft
+Release Lens requests Azure DevOps code/build access through VS Code's Microsoft
 authentication provider. It does not operate a backend service, sell data, or
 collect product telemetry. Comparison history and profiles remain in VS Code
 storage. See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
