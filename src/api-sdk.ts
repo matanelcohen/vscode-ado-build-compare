@@ -331,7 +331,7 @@ export async function setupListStages(
 
 export async function setupSaveProfile(
   draft: SetupDraft,
-  activate = true
+  activate?: boolean
 ): Promise<{ profile: PipelineProfile; snapshot: ProfileSnapshot }> {
   return makeRequest<{ profile: PipelineProfile; snapshot: ProfileSnapshot }>(
     "setup:save",

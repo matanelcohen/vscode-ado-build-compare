@@ -57,7 +57,6 @@ export interface ComparisonWorkspace {
   /** Actions. */
   selectBuild: (buildId: number) => void;
   selectBaseBuild: (buildId: number) => void;
-  swapBuilds: () => void;
   compare: () => Promise<void>;
   reset: () => void;
   copyResults: () => Promise<void>;
@@ -181,17 +180,6 @@ export function useComparisonWorkspace(vscode: any): ComparisonWorkspace {
     setCopyStatus("");
   }, []);
 
-  const swapBuilds = React.useCallback(() => {
-    if (!baseBuild || !selectedBuild) {
-      return;
-    }
-    const nextBaseId = selectedBuild.id;
-    const nextTargetId = baseBuild.id;
-    setBaseBuildId(nextBaseId);
-    setSelectedBuildId(nextTargetId);
-    setCopyStatus("");
-  }, [baseBuild, selectedBuild]);
-
   const compare = React.useCallback(async () => {
     if (!baseBuild || !selectedBuild || !config || !profile) {
       return;
@@ -294,7 +282,6 @@ export function useComparisonWorkspace(vscode: any): ComparisonWorkspace {
 
     selectBuild,
     selectBaseBuild,
-    swapBuilds,
     compare,
     reset,
     copyResults,

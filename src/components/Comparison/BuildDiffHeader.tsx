@@ -2,7 +2,6 @@ import * as React from "react";
 import {
   Badge,
   Body1,
-  Button,
   Caption1,
   Dropdown,
   Link,
@@ -13,7 +12,7 @@ import {
   shorthands,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowSwapRegular } from "@fluentui/react-icons";
+import { ArrowRightRegular } from "@fluentui/react-icons";
 import { PipelineRun } from "../../api-sdk";
 
 const useStyles = makeStyles({
@@ -74,11 +73,12 @@ const useStyles = makeStyles({
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-  swap: {
+  direction: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     paddingTop: tokens.spacingVerticalL,
+    color: tokens.colorNeutralForeground3,
   },
   empty: {
     color: tokens.colorNeutralForeground3,
@@ -157,7 +157,6 @@ interface BuildDiffHeaderProps {
   targetBuilds: PipelineRun[];
   onSelectBase: (buildId: number) => void;
   onSelectTarget: (buildId: number) => void;
-  onSwap: () => void;
   disabled?: boolean;
   /** Renders read-only cards instead of dropdowns. */
   readOnly?: boolean;
@@ -165,7 +164,7 @@ interface BuildDiffHeaderProps {
 
 /**
  * Presents the base and target builds as a single "from → to" unit with an
- * optional swap action, shared by the diff bar and report skins.
+ * forward direction, shared by the diff bar and report skins.
  */
 export const BuildDiffHeader: React.FC<BuildDiffHeaderProps> = ({
   baseBuild,
@@ -174,17 +173,10 @@ export const BuildDiffHeader: React.FC<BuildDiffHeaderProps> = ({
   targetBuilds,
   onSelectBase,
   onSelectTarget,
-  onSwap,
   disabled,
   readOnly,
 }) => {
   const styles = useStyles();
-  const canSwap =
-    !readOnly &&
-    !disabled &&
-    !!baseBuild &&
-    !!targetBuild &&
-    baseBuilds.some((build) => build.id === targetBuild.id);
 
   return (
     <div className={styles.root}>
@@ -213,17 +205,8 @@ export const BuildDiffHeader: React.FC<BuildDiffHeaderProps> = ({
         <BuildSide run={baseBuild} emptyLabel="No base build available." />
       </div>
 
-      <div className={styles.swap}>
-        <Tooltip content="Swap base and target" relationship="label">
-          <Button
-            icon={<ArrowSwapRegular />}
-            appearance="subtle"
-            shape="circular"
-            disabled={!canSwap}
-            onClick={onSwap}
-            aria-label="Swap base and target builds"
-          />
-        </Tooltip>
+      <div className={styles.direction}>
+        <ArrowRightRegular aria-hidden />
       </div>
 
       <div className={styles.column}>

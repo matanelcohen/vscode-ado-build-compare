@@ -152,7 +152,10 @@ export function openSetupPanel(
               existing,
               createId: () => randomUUID(),
             });
-            await store.upsert(profile, message.activate !== false);
+            await store.upsert(
+              profile,
+              message.activate ?? (existing === null)
+            );
             state.savedProfile = profile;
             await onProfilesChanged?.();
             respond({

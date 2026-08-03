@@ -144,7 +144,6 @@ export const ReportSkin: React.FC<SkinProps> = ({ workspace }) => {
     copyStatus,
     selectBuild,
     selectBaseBuild,
-    swapBuilds,
     compare,
     reset,
     copyResults,
@@ -387,7 +386,6 @@ export const ReportSkin: React.FC<SkinProps> = ({ workspace }) => {
               targetBuilds={targetBuilds}
               onSelectBase={selectBaseBuild}
               onSelectTarget={selectBuild}
-              onSwap={swapBuilds}
               disabled={busy || !config}
             />
             <div className={styles.selectorActions}>
