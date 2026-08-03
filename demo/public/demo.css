@@ -1,0 +1,74 @@
+/* Static shell styling for the GitHub Pages demo. The webview UI supplies its
+   own theme tokens; these rules only style the surrounding page chrome. */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #111827;
+  color: #f3f4f6;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+body.demo-light {
+  color-scheme: light;
+  background: #ffffff;
+  color: #242424;
+}
+
+.demo-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #34435a;
+}
+
+body.demo-light .demo-header {
+  border-bottom-color: #d1d1d1;
+}
+
+.demo-title h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.demo-title p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.demo-actions button,
+.demo-actions .demo-link {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.demo-actions button:hover,
+.demo-actions .demo-link:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+
+#root {
+  display: block;
+  min-height: calc(100vh - 80px);
+}
