@@ -55,21 +55,27 @@ or stored.
 - **Portable output** through Markdown, JSON, clipboard, and Azure DevOps work
   items.
 - **Release history** to reopen recent comparisons.
-- **Selectable layouts (skins)** so the workspace matches how you work.
+- **Customizable appearance** with four layouts, seven color themes, three
+  densities, and focused, wide, or full-width content.
 - **Secure defaults**: Microsoft tokens remain in the extension host and Teams
   Workflow URLs use VS Code SecretStorage.
 
 ## Layouts (skins)
 
 The release workspace ships with four interchangeable layouts. Pick one from the
-paint-brush menu in the header; the choice is remembered per webview.
+Appearance menu in the header; the choice is remembered per webview.
 
 | Skin | What it looks like | Best for |
 | --- | --- | --- |
 | **Classic** | The original tabbed layout with stacked build cards and a single results card. | Existing muscle memory |
-| **Diff bar** | Base and target side by side with a swap control, results directly below a compact breadcrumb. | Narrow panels, fastest path to an answer |
+| **Diff bar** | Base and target side by side, with results directly below a compact breadcrumb. | Narrow panels, fastest path to an answer |
 | **Workbench** | A persistent build-selection rail beside a tabbed results pane (Summary / Changes / Share / History). | Editor tabs, most information on screen |
 | **Report** | A summary-first verdict card with share actions on top and details behind collapsible sections. | Release managers and standup updates |
+
+The same Appearance menu also controls the workspace color theme, information
+density, and content width. Use **Follow VS Code** to track the editor
+automatically, or choose Light, Dark, High contrast, Azure, Emerald, or Purple.
+All appearance choices persist for the webview.
 
 ### Classic
 

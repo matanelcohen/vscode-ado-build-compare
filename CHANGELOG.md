@@ -2,6 +2,16 @@
 
 All notable changes to Release Lens for Azure DevOps are documented here.
 
+## [3.5.0] - 2026-08-03
+
+### Added
+
+- Expand the layout picker into a persistent Appearance menu with seven color
+  themes, compact/comfortable/spacious density, and focused/wide/full-width
+  content options.
+- Add Azure, Emerald, and Purple palettes while retaining automatic VS Code
+  theme synchronization as the default.
+
 ## [3.4.0] - 2026-08-03
 
 ### Changed

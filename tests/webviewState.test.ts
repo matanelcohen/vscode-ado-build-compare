@@ -7,6 +7,10 @@ import {
   readComparisonSkin,
   readComparisonTab,
 } from "../src/models/webviewState";
+import {
+  defaultAppearancePreferences,
+  readAppearancePreferences,
+} from "../src/models/appearance";
 
 test("restores a valid comparison tab", () => {
   assert.equal(readComparisonTab({ selectedTab: "share" }), "share");
@@ -38,4 +42,34 @@ test("every skin has a descriptor with a unique id", () => {
     assert.ok(descriptor.label.length > 0);
     assert.ok(descriptor.description.length > 0);
   }
+});
+
+test("restores valid appearance preferences", () => {
+  assert.deepEqual(
+    readAppearancePreferences({
+      appearance: {
+        colorTheme: "emerald",
+        density: "compact",
+        contentWidth: "full",
+      },
+    }),
+    {
+      colorTheme: "emerald",
+      density: "compact",
+      contentWidth: "full",
+    }
+  );
+});
+
+test("appearance preferences safely fall back for invalid state", () => {
+  assert.deepEqual(
+    readAppearancePreferences({
+      appearance: {
+        colorTheme: "neon",
+        density: "tiny",
+        contentWidth: 42,
+      },
+    }),
+    defaultAppearancePreferences
+  );
 });

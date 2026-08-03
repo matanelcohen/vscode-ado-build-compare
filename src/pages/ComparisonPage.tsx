@@ -11,6 +11,7 @@ import { ProfileControls } from "../components/Comparison/ProfileControls";
 import { EnvironmentDrift } from "../components/Comparison/EnvironmentDrift";
 import { SkinPicker } from "../components/Comparison/SkinPicker";
 import { useComparisonWorkspace } from "../hooks/useComparisonWorkspace";
+import { AppearancePreferences } from "../models/appearance";
 import { ComparisonSkin } from "../models/webviewState";
 import {
   ClassicSkin,
@@ -72,9 +73,21 @@ const skinComponents: Record<ComparisonSkin, React.FC<SkinProps>> = {
 
 interface ComparisonPageProps {
   vscode: any;
+  appearance: AppearancePreferences;
+  onAppearanceChange: (patch: Partial<AppearancePreferences>) => void;
 }
 
-export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
+const contentMaxWidths: Record<AppearancePreferences["contentWidth"], string> = {
+  focused: "1100px",
+  wide: "1600px",
+  full: "100%",
+};
+
+export const ComparisonPage: React.FC<ComparisonPageProps> = ({
+  vscode,
+  appearance,
+  onAppearanceChange,
+}) => {
   const styles = useStyles();
   const workspace = useComparisonWorkspace(vscode);
   const {
@@ -99,7 +112,10 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
   const showHeaderError = Boolean(currentError) && skin === "classic";
 
   return (
-    <div className={styles.root}>
+    <div
+      className={styles.root}
+      style={{ maxWidth: contentMaxWidths[appearance.contentWidth] }}
+    >
       <div className={styles.header}>
         <div>
           <Title3 as="h1" className={styles.title}>
@@ -118,7 +134,12 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ vscode }) => {
               onCompared={loadComparison}
             />
           )}
-          <SkinPicker skin={skin} onSelect={selectSkin} />
+          <SkinPicker
+            skin={skin}
+            onSelect={selectSkin}
+            appearance={appearance}
+            onAppearanceChange={onAppearanceChange}
+          />
           <Button
             icon={<ArrowClockwiseRegular />}
             disabled={isLoading || comparisonLoading}
