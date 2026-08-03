@@ -12,6 +12,13 @@ All notable changes to ReleaseLens for Azure DevOps are documented here.
   deployment stages on demand.
 - Onboarding screenshots in the README showing the guided setup steps,
   discovery, a completed profile, and the saved profile list.
+## [3.2.0] - 2026-08-02
+
+### Added
+
+- Selectable workspace layouts ("skins"): **Classic** (the previous layout),
+  **Diff bar**, **Workbench**, and **Report**. Switch layouts from the
+  paint-brush menu in the header; the choice is remembered per webview.
 
 ## [3.1.1] - 2026-08-02
 
