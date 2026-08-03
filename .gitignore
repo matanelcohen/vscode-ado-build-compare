@@ -1,6 +1,7 @@
 # Build outputs
 out/
 dist/
+demo-dist/
 build/
 
 # Node modules

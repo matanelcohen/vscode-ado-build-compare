@@ -11,6 +11,8 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=matancohenmsft.fe-ninja-tools">Install from VS Code Marketplace</a>
   ·
+  <a href="https://matanelcohen.github.io/vscode-ado-build-compare/">Live demo</a>
+  ·
   <a href="https://github.com/matanelcohen/vscode-ado-build-compare/issues/new?template=feedback.yml">Send feedback</a>
   ·
   <a href="PRIVACY.md">Privacy</a>
@@ -31,6 +33,12 @@ Release Lens turns Azure DevOps pipeline history into a release briefing inside
 VS Code. Compare any two builds, branches, tags, or environments and get the
 pull requests, direct commits, contributors, changed files, hotspots, and
 deployment risk in one place.
+
+## Try it without installing
+
+Open the [live demo](https://matanelcohen.github.io/vscode-ado-build-compare/).
+It runs the real extension UI in the browser on mock release data, so nothing is
+sent to Azure DevOps and no sign-in is needed.
 
 ## Reach value in 30 seconds
 

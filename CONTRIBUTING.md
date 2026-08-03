@@ -117,6 +117,15 @@ To create a VSIX package:
 npm run package
 ```
 
+#### Building the browser demo
+The GitHub Pages demo runs the webview UI against mock data in `src/demo/`:
+```bash
+npm run build:demo
+npx http-server demo-dist   # or any static file server
+```
+Pushes to `main` publish `demo-dist/` to GitHub Pages via
+`.github/workflows/pages.yml`.
+
 ## Project Structure
 
 ```
