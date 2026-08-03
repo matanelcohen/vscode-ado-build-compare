@@ -89,14 +89,45 @@ paint-brush menu in the header; the choice is remembered per webview.
 
 ## Guided setup
 
-The onboarding flow discovers:
+**Connect Azure DevOps** and **Edit Pipeline Profile** open an interactive
+setup page inside VS Code instead of a chain of input prompts. The page
+discovers, step by step:
 
 1. Azure DevOps organization
 2. Project
 3. Repository
 4. Pipeline
 5. Deployment stage
-6. Optional relevant paths
+6. Optional relevant paths and automatic Teams updates
+
+<p align="center">
+  <img src="docs/images/onboarding-connect.png" width="900" alt="ReleaseLens guided setup page with the five onboarding steps before any connection">
+</p>
+
+Enter your organization URL and select **Discover projects**; each following
+step is populated from Azure DevOps.
+
+<p align="center">
+  <img src="docs/images/onboarding-discovery.png" width="900" alt="Project dropdown listing the Azure DevOps projects discovered for the organization">
+</p>
+
+Discovered deployment stages appear as one-click choices, and the profile name
+is suggested from your selections.
+
+<p align="center">
+  <img src="docs/images/onboarding-complete.png" width="900" alt="Completed guided setup with project, repository, pipeline, stage, path filters, and Teams updates configured">
+</p>
+
+Saved profiles are listed beside the form, so you can edit, activate, or delete
+any of them.
+
+<p align="center">
+  <img src="docs/images/onboarding-profiles.png" width="900" alt="Setup page showing saved pipeline profiles with active profile marked and one profile open for editing">
+</p>
+
+Every field stays editable, so you can revisit an earlier step without
+restarting. The same page lists saved profiles, so you can edit, activate, or
+delete any existing configuration.
 
 Save multiple profiles for services and environments, then switch between them
 from the native Release Dashboard. Existing `buildCompareTools.*` settings are

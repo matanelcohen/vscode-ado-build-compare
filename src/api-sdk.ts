@@ -3,7 +3,8 @@ import type {
   GitReference,
   TeamsShareRequest,
 } from "./models/comparison";
-import type { ProfileSnapshot } from "./models/profile";
+import type { PipelineProfile, ProfileSnapshot } from "./models/profile";
+import type { SetupDraft } from "./models/setupDraft";
 import type { ComparisonHistoryEntry } from "./models/history";
 import type { ExportFormat } from "./utils/exportFormatting";
 
@@ -264,4 +265,99 @@ export async function compareProfileEnvironments(
     { baseProfileId, targetProfileId },
     180000
   );
+}
+
+export interface DiscoveredItem {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface SetupInitPayload {
+  draft: SetupDraft;
+  profiles: PipelineProfile[];
+  activeProfileId: string | null;
+  mode: "create" | "edit";
+}
+
+export async function setupInit(): Promise<SetupInitPayload> {
+  return makeRequest<SetupInitPayload>("setup:init", {});
+}
+
+export async function setupListProjects(
+  organizationUrl: string
+): Promise<DiscoveredItem[]> {
+  return makeRequest<DiscoveredItem[]>(
+    "setup:listProjects",
+    { organizationUrl },
+    120000
+  );
+}
+
+export async function setupListRepositories(
+  organizationUrl: string,
+  project: string
+): Promise<DiscoveredItem[]> {
+  return makeRequest<DiscoveredItem[]>(
+    "setup:listRepositories",
+    { organizationUrl, project },
+    120000
+  );
+}
+
+export async function setupListPipelines(
+  organizationUrl: string,
+  project: string,
+  repositoryId: string
+): Promise<DiscoveredItem[]> {
+  return makeRequest<DiscoveredItem[]>(
+    "setup:listPipelines",
+    { organizationUrl, project, repositoryId },
+    120000
+  );
+}
+
+export async function setupListStages(
+  organizationUrl: string,
+  project: string,
+  definitionId: number
+): Promise<string[]> {
+  return makeRequest<string[]>(
+    "setup:listStages",
+    { organizationUrl, project, definitionId },
+    120000
+  );
+}
+
+export async function setupSaveProfile(
+  draft: SetupDraft,
+  activate = true
+): Promise<{ profile: PipelineProfile; snapshot: ProfileSnapshot }> {
+  return makeRequest<{ profile: PipelineProfile; snapshot: ProfileSnapshot }>(
+    "setup:save",
+    { draft, activate },
+    120000
+  );
+}
+
+export async function setupDeleteProfile(
+  profileId: string
+): Promise<{ deleted: boolean; snapshot: ProfileSnapshot }> {
+  return makeRequest<{ deleted: boolean; snapshot: ProfileSnapshot }>(
+    "setup:delete",
+    { profileId },
+    300000
+  );
+}
+
+export async function setupActivateProfile(
+  profileId: string
+): Promise<{ snapshot: ProfileSnapshot }> {
+  return makeRequest<{ snapshot: ProfileSnapshot }>("setup:activate", {
+    profileId,
+  });
+}
+
+export function setupClose(): void {
+  vscode?.postMessage({ command: "setup:close" });
 }

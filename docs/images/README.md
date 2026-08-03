@@ -2,6 +2,18 @@
 
 This directory contains images referenced in the INSTALL.md guide.
 
+## Available Images
+
+### Onboarding (guided setup)
+Referenced from the "Guided setup" section of the root README.
+
+- `onboarding-connect.png` - Guided setup page before any connection
+- `onboarding-discovery.png` - Project dropdown with discovered Azure DevOps projects
+- `onboarding-complete.png` - Completed setup with pipeline, stage, filters, and Teams updates
+- `onboarding-profiles.png` - Saved pipeline profiles with one open for editing
+
+These use fictional `contoso` data so no real organization details are exposed.
+
 ## Required Images
 
 To complete the installation guide, add the following screenshots:
