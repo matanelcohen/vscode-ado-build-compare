@@ -2,7 +2,7 @@
   "name": "fe-ninja-tools",
   "displayName": "Release Lens for Azure DevOps",
   "description": "See what changed, assess deployment risk, and publish release intelligence from Azure DevOps.",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "publisher": "matancohenmsft",
   "license": "MIT",
   "icon": "media/releaselens.png",
