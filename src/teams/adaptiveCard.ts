@@ -108,9 +108,8 @@ export function buildTeamsWorkflowPayload(
   const buildUrl = comparison.targetBuild._links?.web?.href as
     | string
     | undefined;
-  const displayedCommits = comparison.commits.slice(0, 12);
   const { blocks: changeBlocks, placedMentionIds } = buildAuthorChangeBlocks(
-    displayedCommits,
+    comparison.commits,
     mentionData.mentions
   );
   const unplacedMentionText = mentionData.mentions
@@ -120,8 +119,6 @@ export function buildTeamsWorkflowPayload(
     )
     .map((mention) => `<at>${mention.displayName}</at>`)
     .join(" ");
-  const hiddenCount = Math.max(0, comparison.commits.length - 12);
-
   const body: Record<string, unknown>[] = [
     {
       type: "TextBlock",
@@ -172,15 +169,6 @@ export function buildTeamsWorkflowPayload(
             wrap: true,
           },
         ]),
-    ...(hiddenCount > 0
-      ? [
-          {
-            type: "TextBlock",
-            text: `_...and ${hiddenCount} more changes_`,
-            wrap: true,
-          },
-        ]
-      : []),
   ];
 
   if (unplacedMentionText) {

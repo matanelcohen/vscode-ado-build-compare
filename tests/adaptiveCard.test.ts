@@ -137,6 +137,37 @@ test("builds a Teams Workflow Adaptive Card with deduplicated mentions", () => {
   );
 });
 
+test("includes every change in a Teams Workflow Adaptive Card", () => {
+  const result = comparison();
+  const sourceCommit = result.commits[0];
+  assert.ok(sourceCommit);
+  result.commits = Array.from({ length: 15 }, (_, index) => ({
+    ...sourceCommit,
+    id: String(index).padStart(16, "0"),
+    message: `Change ${index + 1}`,
+  }));
+
+  const payload = buildTeamsWorkflowPayload({
+    title: "Production release",
+    comparison: result,
+    mentions: [],
+  }) as {
+    attachments: Array<{
+      content: {
+        body: Array<{ text?: string }>;
+      };
+    }>;
+  };
+  const bodyText = payload.attachments[0]?.content.body
+    .map((block) => block.text || "")
+    .join("\n");
+
+  for (let index = 1; index <= result.commits.length; index += 1) {
+    assert.match(bodyText, new RegExp(`Change ${index}(?:\\n|$)`));
+  }
+  assert.doesNotMatch(bodyText, /more changes/);
+});
+
 test("generates readable plain-text output from typed results", () => {
   const output = generatePlainTextResults(comparison());
   assert.match(output, /2026\.10 -> 2026\.11/);
